@@ -15,6 +15,12 @@ while total_error < -.1
 
     %% load mat file
     load('muscle_geom_orig.mat');
+    
+    %% Define Gap Threshold
+    %     desired_gap=1.5;
+    %     relative_gap_weight=0.5% fixed geom1, moving geom2 = 0.0
+    desired_gap=15;
+    relative_gap_weight=1.0; % fixed geom1, moving geom2 = 0.0
 
     %% Reduced Mesh
     geom2_mesh_reduction_factor=2000;
@@ -28,46 +34,50 @@ while total_error < -.1
     geom1_geom.vertices_reduce=temp.vertices;
 
     %% initial plots
-    geom2_geom_fig=figure()
-    geom2_patch_orig=patch('Faces',geom2_geom.faces_orig,'Vertices',geom2_geom.vertices_orig,'FaceColor','r','FaceAlpha',.5)
-    hold on
-    geom2_patch_reduce=patch('Faces',geom2_geom.faces_reduce,'Vertices',geom2_geom.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    
-    geom1_geom_fig=figure()
-    geom1_patch_orig=patch('Faces',geom1_geom.faces_orig,'Vertices',geom1_geom.vertices_orig,'FaceColor','r','FaceAlpha',.5)
-    hold on
-    geom1_patch_reduce=patch('Faces',geom1_geom.faces_reduce,'Vertices',geom1_geom.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    
-    both_geom_fig=figure()
-    geom2_patch_orig=patch('Faces',geom2_geom.faces_orig,'Vertices',geom2_geom.vertices_orig,'FaceColor','r','FaceAlpha',.5)
-    hold on
-    geom2_patch_reduce=patch('Faces',geom2_geom.faces_reduce,'Vertices',geom2_geom.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    geom1_patch_orig=patch('Faces',geom1_geom.faces_orig,'Vertices',geom1_geom.vertices_orig,'FaceColor','r','FaceAlpha',.5)
-    hold on
-    geom1_patch_reduce=patch('Faces',geom1_geom.faces_reduce,'Vertices',geom1_geom.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    
+%     geom2_geom_fig=figure()
+%     geom2_patch_orig=patch('Faces',geom2_geom.faces_orig,'Vertices',geom2_geom.vertices_orig,'FaceColor','r','FaceAlpha',.5)
+%     hold on
+%     geom2_patch_reduce=patch('Faces',geom2_geom.faces_reduce,'Vertices',geom2_geom.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
+%     
+%     geom1_geom_fig=figure()
+%     geom1_patch_orig=patch('Faces',geom1_geom.faces_orig,'Vertices',geom1_geom.vertices_orig,'FaceColor','r','FaceAlpha',.5)
+%     hold on
+%     geom1_patch_reduce=patch('Faces',geom1_geom.faces_reduce,'Vertices',geom1_geom.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
+%     
+%     both_geom_fig=figure()
+%     geom2_patch_orig=patch('Faces',geom2_geom.faces_orig,'Vertices',geom2_geom.vertices_orig,'FaceColor','r','FaceAlpha',.5)
+%     hold on
+%     geom2_patch_reduce=patch('Faces',geom2_geom.faces_reduce,'Vertices',geom2_geom.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
+%     geom1_patch_orig=patch('Faces',geom1_geom.faces_orig,'Vertices',geom1_geom.vertices_orig,'FaceColor','r','FaceAlpha',.5)
+%     hold on
+%     geom1_patch_reduce=patch('Faces',geom1_geom.faces_reduce,'Vertices',geom1_geom.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
+%     
 
     %% determine initial overclosure distances
-    tri_timer=tic();
-    [geom1_surf_to_geom2_point_distance, geom1_surf_to_geom2_point_points] = point2trimesh('Faces',geom1_geom.faces_reduce,...
-        'Vertices',geom1_geom.vertices_reduce,'QueryPoints',geom2_geom.vertices_reduce,'Algorithm','parallel');
+    if size(geom1_geom.faces_reduce,2)==3
+        % mesh geometry is tri
+        tri_timer=tic();
+        [geom1_surf_to_geom2_point_distance, geom1_surf_to_geom2_point_points] = point2trimesh('Faces',geom1_geom.faces_reduce,...
+            'Vertices',geom1_geom.vertices_reduce,'QueryPoints',geom2_geom.vertices_reduce,'Algorithm','parallel');
+        toc(tri_timer)
+    elseif size(geom1_geom.faces_reduce,2)==4
+        % mesh geometry is quad
+    end
+    
+    if size(geom2_geom.faces_reduce,2)==3
+        % mesh geometry is tri
+        tri_timer=tic();
+        [geom2_surf_to_geom1_point_distance, geom2_surf_to_geom1_point_points] = point2trimesh('Faces',geom2_geom.faces_reduce,...
+            'Vertices',geom2_geom.vertices_reduce,'QueryPoints',geom1_geom.vertices_reduce,'Algorithm','parallel');
 
-    toc(tri_timer)
-
-    tri_timer=tic();
-    [geom2_surf_to_geom1_point_distance, geom2_surf_to_geom1_point_points] = point2trimesh('Faces',geom2_geom.faces_reduce,...
-        'Vertices',geom2_geom.vertices_reduce,'QueryPoints',geom1_geom.vertices_reduce,'Algorithm','parallel');
-
-    toc(tri_timer)
-
-    %% Define Gap Threshold
-%     desired_gap=1.5;
-%     relative_gap_weight=0.5% fixed geom1, moving geom2 = 0.0
-    desired_gap=15;
-    relative_gap_weight=0.5; % fixed geom1, moving geom2 = 0.0
+        toc(tri_timer)
+    elseif size(geom2_geom.faces_reduce,2)==4
+       % mesh geometry is quad 
+    end
 
 
     %% Determine Gaps
+    
     geom1_surf_to_geom2_point_distance_dir=sign(geom1_surf_to_geom2_point_distance);
     geom1_surf_to_geom2_point_distance=geom1_surf_to_geom2_point_distance-desired_gap;
     geom1_surf_to_geom2_vector=geom1_surf_to_geom2_point_points;
@@ -79,10 +89,8 @@ while total_error < -.1
             multiplier=1;
         end
         geom1_surf_to_geom2_vector(count_vertex,:)=-geom1_surf_to_geom2_point_distance_dir(count_vertex)*(geom1_surf_to_geom2_point_points(count_vertex,:)...
-            -geom2_geom.vertices_reduce(count_vertex,:))*(1-relative_gap_weight)*multiplier;
+            -geom2_geom.vertices_reduce(count_vertex,:))*multiplier;
     end
-
-
 
     geom2_surf_to_geom1_point_distance_dir=sign(geom2_surf_to_geom1_point_distance);
     geom2_surf_to_geom1_point_distance=geom2_surf_to_geom1_point_distance-desired_gap;
@@ -95,8 +103,43 @@ while total_error < -.1
             multiplier=1;
         end
         geom2_surf_to_geom1_vector(count_vertex,:)=-geom2_surf_to_geom1_point_distance_dir(count_vertex)*(geom2_surf_to_geom1_point_points(count_vertex,:)...
-            -geom1_geom.vertices_reduce(count_vertex,:))*relative_gap_weight*multiplier;
+            -geom1_geom.vertices_reduce(count_vertex,:))*multiplier;
     end
+    
+    % deform vector is vector needed to deform nodes located from the
+    % Surface to the ndoes wheres teh vector is defined. 
+    geom_master_deform_vector=[geom1_surf_to_geom2_vector;-geom2_surf_to_geom1_vector];
+    geom_master_positions=[geom2_geom.vertices_reduce;geom1_geom.vertices_reduce];
+    
+%     geom1_surf_to_geom2_point_distance_dir=sign(geom1_surf_to_geom2_point_distance);
+%     geom1_surf_to_geom2_point_distance=geom1_surf_to_geom2_point_distance-desired_gap;
+%     geom1_surf_to_geom2_vector=geom1_surf_to_geom2_point_points;
+%     for count_vertex=1:length(geom1_surf_to_geom2_point_distance)
+%         if geom1_surf_to_geom2_point_distance(count_vertex)>0
+%             geom1_surf_to_geom2_point_distance(count_vertex)=0;
+%             multiplier=0;
+%         else
+%             multiplier=1;
+%         end
+%         geom1_surf_to_geom2_vector(count_vertex,:)=-geom1_surf_to_geom2_point_distance_dir(count_vertex)*(geom1_surf_to_geom2_point_points(count_vertex,:)...
+%             -geom2_geom.vertices_reduce(count_vertex,:))*(1-relative_gap_weight)*multiplier;
+%     end
+% 
+% 
+% 
+%     geom2_surf_to_geom1_point_distance_dir=sign(geom2_surf_to_geom1_point_distance);
+%     geom2_surf_to_geom1_point_distance=geom2_surf_to_geom1_point_distance-desired_gap;
+%     geom2_surf_to_geom1_vector=geom2_surf_to_geom1_point_points;
+%     for count_vertex=1:length(geom2_surf_to_geom1_point_distance)
+%         if geom2_surf_to_geom1_point_distance(count_vertex)>0
+%             geom2_surf_to_geom1_point_distance(count_vertex)=0;
+%             multiplier=0;
+%         else
+%             multiplier=1;
+%         end
+%         geom2_surf_to_geom1_vector(count_vertex,:)=-geom2_surf_to_geom1_point_distance_dir(count_vertex)*(geom2_surf_to_geom1_point_points(count_vertex,:)...
+%             -geom1_geom.vertices_reduce(count_vertex,:))*relative_gap_weight*multiplier;
+%     end
 
     %% Create arrow deformation plot
 %     geom2_deform_reduce_fig=figure();
@@ -133,23 +176,26 @@ while total_error < -.1
 %     toc(rbf_timer)
 
 
-    geom2_deform_vec_rbf=newrb([geom2_geom.vertices_reduce',geom1_geom.vertices_reduce'],...
-        [geom1_surf_to_geom2_vector',-geom2_surf_to_geom1_vector'],...
+geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
         1E-6,smoothing,rbf_iterations);
-    toc(rbf_timer)
 
-
-    geom1_deform_vec_rbf=newrb([geom1_geom.vertices_reduce',geom2_geom.vertices_reduce'],...
-        [geom2_surf_to_geom1_vector',-geom1_surf_to_geom2_vector'],...
-        1E-6,smoothing,rbf_iterations);
-    toc(rbf_timer)
+%     geom2_deform_vec_rbf=newrb([geom2_geom.vertices_reduce',geom1_geom.vertices_reduce'],...
+%         [geom1_surf_to_geom2_vector',-geom2_surf_to_geom1_vector'],...
+%         1E-6,smoothing,rbf_iterations);
+%     toc(rbf_timer)
+% 
+% 
+%     geom1_deform_vec_rbf=newrb([geom1_geom.vertices_reduce',geom2_geom.vertices_reduce'],...
+%         [geom2_surf_to_geom1_vector',-geom1_surf_to_geom2_vector'],...
+%         1E-6,smoothing,rbf_iterations);
+%     toc(rbf_timer)
 
 
     %% Determine Original Deformations
-    geom2_deform_orig_vec=sim(geom2_deform_vec_rbf,geom2_geom.vertices_orig');
-    geom2_deform_orig_vec=geom2_deform_orig_vec';
-    geom1_deform_orig_vec=sim(geom1_deform_vec_rbf,geom1_geom.vertices_orig');
-    geom1_deform_orig_vec=geom1_deform_orig_vec';
+    geom2_deform_orig_vec=sim(geom_deform_vec_rbf,geom2_geom.vertices_orig');
+    geom2_deform_orig_vec=geom2_deform_orig_vec'*(relative_gap_weight);
+    geom1_deform_orig_vec=sim(geom_deform_vec_rbf,geom1_geom.vertices_orig');
+    geom1_deform_orig_vec=-geom1_deform_orig_vec'*(1-relative_gap_weight);
 
     %% Plot original deformations
 %     geom2_deform_orig_fig=figure();
