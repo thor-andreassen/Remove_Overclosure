@@ -9,12 +9,13 @@ geom1.faces=elemlist_renum(:,2:end);
 geom1.vertices=nodelist(:,2:end);
 geom1.vertices_orig=nodelist(:,2:end);
 
-[nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('hex_cone.inp');
+[nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('tri_cone.inp');
 geom2.faces=elemlist_renum(:,2:end);
 geom2.vertices=nodelist(:,2:end);
 geom2.vertices_orig=nodelist(:,2:end);
+save('muscle_geom_orig.mat');
 
-load('muscle_geom_orig.mat');
+% load('muscle_geom_orig.mat');
 %% Define Gap Threshold
     
     % gap to achieve in final meshes in unit of mesh
@@ -22,7 +23,7 @@ load('muscle_geom_orig.mat');
     %1 = fixed geom 1 moving geom 2.
     % 0 = moving geom 1, fixed geom 2.
     relative_gap_weight=0.5;
-    element_3d_type=[1,1];
+    element_3d_type=[1,0];
     use_parallel_loops=1;
 %% load initial geometries
 %     load stls
@@ -69,11 +70,14 @@ counter=1;
 while total_error < -.1
 
     %% Reduced Mesh
-    
+    rand_ratio=.75;
     if element_3d_type(1)
             % element is 3D
-            [face_outer_surf,~,~,~]=get3DElementOuterSurface(geom1.faces,geom1.vertices);
+            [face_outer_surf,~,~,~,~,geom1_inner_nodes]=get3DElementOuterSurface(geom1.faces,geom1.vertices);
             [geom1.faces_reduce,geom1.vertices_reduce]=renumberFacesAndVertices(face_outer_surf,geom1.vertices);
+            temp_rand=randperm(size(geom1_inner_nodes,1));
+            temp_rand_val=temp_rand(1:ceil(size(geom1_inner_nodes,1)*rand_ratio));
+            geom1.vertices_rand=[geom1.vertices_reduce;geom1.vertices(temp_rand_val,:)];
             if size(geom1.faces_reduce,2)==4
                     geom1_reduce_type_Q4=1;
             else
@@ -92,12 +96,16 @@ while total_error < -.1
                     % element is a quad
                     geom1_reduce_type_Q4=1;
             end
+            geom1.vertices_rand=geom1.vertices_reduce;
     end
             
    if element_3d_type(2)
            % element is 3D
-           [face_outer_surf,~,~,~]=get3DElementOuterSurface(geom2.faces,geom2.vertices);
+           [face_outer_surf,~,~,~,~,geom2_inner_nodes]=get3DElementOuterSurface(geom2.faces,geom2.vertices);
             [geom2.faces_reduce,geom2.vertices_reduce]=renumberFacesAndVertices(face_outer_surf,geom2.vertices);
+            temp_rand=randperm(size(geom2_inner_nodes,1));
+            temp_rand_val=temp_rand(1:ceil(size(geom2_inner_nodes,1)*rand_ratio));
+            geom2.vertices_rand=[geom2.vertices_reduce;geom2.vertices(temp_rand_val,:)];
             if size(geom2.faces_reduce,2)==4
                     geom2_reduce_type_Q4=1;
             else
@@ -116,6 +124,7 @@ while total_error < -.1
                    % element is a quad
                    geom2_reduce_type_Q4=1;
            end
+           geom2.vertices_rand=geom2.vertices_reduce;
    end
 
 
@@ -144,25 +153,25 @@ while total_error < -.1
         % mesh geometry is tri
         tri_timer=tic();
         [geom1_surf_to_geom2_point_distance, geom1_surf_to_geom2_point_points] = point2trimesh('Faces',geom1.faces_reduce,...
-            'Vertices',geom1.vertices_reduce,'QueryPoints',geom2.vertices_reduce,'Algorithm','parallel');
+            'Vertices',geom1.vertices_reduce,'QueryPoints',geom2.vertices_rand,'Algorithm','parallel');
         toc(tri_timer)
     elseif geom1_reduce_type_Q4==1
         % mesh geometry is quad
         [geom1_surf_to_geom2_point_points,geom1_surf_to_geom2_point_distance]=...
-                getPointToQ4Mesh(geom1.faces_reduce,geom1.vertices_reduce,geom2.vertices_reduce,use_parallel_loops);
+                getPointToQ4Mesh(geom1.faces_reduce,geom1.vertices_reduce,geom2.vertices_rand,use_parallel_loops);
     end
     
     if geom2_reduce_type_Q4==0
         % mesh geometry is tri
         tri_timer=tic();
         [geom2_surf_to_geom1_point_distance, geom2_surf_to_geom1_point_points] = point2trimesh('Faces',geom2.faces_reduce,...
-            'Vertices',geom2.vertices_reduce,'QueryPoints',geom1.vertices_reduce,'Algorithm','parallel');
+            'Vertices',geom2.vertices_reduce,'QueryPoints',geom1.vertices_rand,'Algorithm','parallel');
 
         toc(tri_timer)
     elseif geom2_reduce_type_Q4==1
        % mesh geometry is quad
        [geom2_surf_to_geom1_point_points,geom2_surf_to_geom1_point_distance]=...
-                getPointToQ4Mesh(geom2.faces_reduce,geom2.vertices_reduce,geom1.vertices_reduce,use_parallel_loops);
+                getPointToQ4Mesh(geom2.faces_reduce,geom2.vertices_reduce,geom1.vertices_rand,use_parallel_loops);
     end
 
 
@@ -179,7 +188,7 @@ while total_error < -.1
             multiplier=1;
         end
         geom1_surf_to_geom2_vector(count_vertex,:)=-geom1_surf_to_geom2_point_distance_dir(count_vertex)*(geom1_surf_to_geom2_point_points(count_vertex,:)...
-            -geom2.vertices_reduce(count_vertex,:))*multiplier;
+            -geom2.vertices_rand(count_vertex,:))*multiplier;
     end
 
     geom2_surf_to_geom1_point_distance_dir=sign(geom2_surf_to_geom1_point_distance);
@@ -193,13 +202,13 @@ while total_error < -.1
             multiplier=1;
         end
         geom2_surf_to_geom1_vector(count_vertex,:)=-geom2_surf_to_geom1_point_distance_dir(count_vertex)*(geom2_surf_to_geom1_point_points(count_vertex,:)...
-            -geom1.vertices_reduce(count_vertex,:))*multiplier;
+            -geom1.vertices_rand(count_vertex,:))*multiplier;
     end
     
     % deform vector is vector needed to deform nodes located from the
     % Surface to the ndoes wheres teh vector is defined. 
     geom_master_deform_vector=[geom1_surf_to_geom2_vector;-geom2_surf_to_geom1_vector];
-    geom_master_positions=[geom2.vertices_reduce;geom1.vertices_reduce];
+    geom_master_positions=[geom2.vertices_rand;geom1.vertices_rand];
     
 %     geom1_surf_to_geom2_point_distance_dir=sign(geom1_surf_to_geom2_point_distance);
 %     geom1_surf_to_geom2_point_distance=geom1_surf_to_geom2_point_distance-desired_gap;
@@ -232,54 +241,40 @@ while total_error < -.1
 %     end
 
     %% Create arrow deformation plot
-%     geom2_deform_reduce_fig=figure();
-%     plot3(geom2.vertices_reduce(:,1),geom2.vertices_reduce(:,2),...
-%         geom2.vertices_reduce(:,3),'ro')
-%     hold on
-%     if norm(geom1_surf_to_geom2_vector)>0
-%         arrow3(geom2.vertices_reduce,geom1_surf_to_geom2_vector+geom2.vertices_reduce)
-%     end
-%     axis equal
-% 
-%     geom1_deform_reduce_fig=figure();
-%     plot3(geom1.vertices_reduce(:,1),geom1.vertices_reduce(:,2),...
-%         geom1.vertices_reduce(:,3),'ro')
-%     hold on
-%     if norm(geom2_surf_to_geom1_vector)>0
-%         arrow3(geom1.vertices_reduce,geom2_surf_to_geom1_vector+geom1.vertices_reduce)
-%     end
-%     axis equal
+    geom2_deform_reduce_fig=figure();
+    plot3(geom2.vertices_rand(:,1),geom2.vertices_rand(:,2),...
+        geom2.vertices_rand(:,3),'ro')
+    hold on
+    if norm(geom1_surf_to_geom2_vector)>0
+        arrow3(geom2.vertices_rand,geom1_surf_to_geom2_vector+geom2.vertices_rand)
+    end
+    axis equal
+
+    geom1_deform_reduce_fig=figure();
+    plot3(geom1.vertices_rand(:,1),geom1.vertices_rand(:,2),...
+        geom1.vertices_rand(:,3),'ro')
+    hold on
+    if norm(geom2_surf_to_geom1_vector)>0
+        arrow3(geom1.vertices_rand,geom2_surf_to_geom1_vector+geom1.vertices_rand)
+    end
+    axis equal
     %% create Radial Basis Approximation
+    % good parameters for 2D and 3D
+    smoothing=50;
+    rbf_iterations=1000;
+    
+    % good parameters for 2D and 2D
+%     smoothing=1000;
 %     rbf_iterations=1000;
-%     smoothing=10;
-%     rbf_iterations=1000;
-    rbf_iterations=300;
-    smoothing=1000;
     rbf_timer=tic();
-%     geom2_deform_vec_rbf=newrb(geom2.vertices_reduce',geom1_surf_to_geom2_vector',...
-%         1E-6,smoothing,rbf_iterations);
-%     toc(rbf_timer)
-% 
-% 
-%     rbf_timer=tic();
-%     geom1_deform_vec_rbf=newrb(geom1.vertices_reduce',geom2_surf_to_geom1_vector',...
-%         1E-6,smoothing,rbf_iterations);
-%     toc(rbf_timer)
+
 
 
 geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
         1E-6,smoothing,rbf_iterations);
-
-%     geom2_deform_vec_rbf=newrb([geom2.vertices_reduce',geom1.vertices_reduce'],...
-%         [geom1_surf_to_geom2_vector',-geom2_surf_to_geom1_vector'],...
-%         1E-6,smoothing,rbf_iterations);
-%     toc(rbf_timer)
-% 
-% 
-%     geom1_deform_vec_rbf=newrb([geom1.vertices_reduce',geom2.vertices_reduce'],...
-%         [geom2_surf_to_geom1_vector',-geom1_surf_to_geom2_vector'],...
-%         1E-6,smoothing,rbf_iterations);
-%     toc(rbf_timer)
+    
+%     geom_deform_vec_rbf=newrbe(geom_master_positions',geom_master_deform_vector',1000);
+   
 
 
     %% Determine Original Deformations
