@@ -35,3 +35,4 @@ p2=patch('Faces',geom2.faces,'Vertices',geom2.vertices,'FaceColor','interp','Edg
 % end
 colormap jet
 colorbar
+axis equal

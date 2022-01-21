@@ -4,12 +4,14 @@ close all
 clc
 
 %% load geoms
-[nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('hex_cylinder.inp');
+[nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('CART1-FEMUR-S192803L_2.inp');
+% [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('hex_cylinder.inp');
 geom1.faces=elemlist_renum(:,2:end);
 geom1.vertices=nodelist(:,2:end);
 geom1.vertices_orig=nodelist(:,2:end);
 
-[nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('tri_cone.inp');
+[nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('BONE1-FEMUR-S192803L.inp');
+% [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('tri_cone.inp');
 geom2.faces=elemlist_renum(:,2:end);
 geom2.vertices=nodelist(:,2:end);
 geom2.vertices_orig=nodelist(:,2:end);
@@ -19,10 +21,10 @@ save('muscle_geom_orig.mat');
 %% Define Gap Threshold
     
     % gap to achieve in final meshes in unit of mesh
-    desired_gap=2;
+    desired_gap=.01;
     %1 = fixed geom 1 moving geom 2.
     % 0 = moving geom 1, fixed geom 2.
-    relative_gap_weight=0.5;
+    relative_gap_weight=0;
     element_3d_type=[1,0];
     use_parallel_loops=1;
 %% load initial geometries
@@ -261,7 +263,7 @@ while total_error < -.1
     %% create Radial Basis Approximation
     % good parameters for 2D and 3D
     smoothing=50;
-    rbf_iterations=1000;
+    rbf_iterations=300;
     
     % good parameters for 2D and 2D
 %     smoothing=1000;
