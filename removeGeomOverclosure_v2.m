@@ -4,29 +4,42 @@ close all
 clc
 
 %% load geoms
-[nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('CART1-FEMUR-S192803L_2.inp');
-% [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('hex_cylinder.inp');
-geom1.faces=elemlist_renum(:,2:end);
-geom1.vertices=nodelist(:,2:end);
-geom1.vertices_orig=nodelist(:,2:end);
+[geom1.faces,geom1.vertices]=stlRead2('glut_max_test.stl');
+geom1.vertices_orig=geom1.vertices;
 
-[nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('BONE1-FEMUR-S192803L.inp');
+% [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('CART1-FEMUR-S192803L_2.inp');
+% [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('hex_cylinder.inp');
+% geom1.faces=elemlist_renum(:,2:end);
+% geom1.vertices=nodelist(:,2:end);
+% geom1.vertices_orig=nodelist(:,2:end);
+
+[geom2.faces,geom2.vertices]=stlRead2('glut_med_test.stl');
+geom2.vertices_orig=geom2.vertices;
+% [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('BONE1-FEMUR-S192803L.inp');
 % [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('tri_cone.inp');
-geom2.faces=elemlist_renum(:,2:end);
-geom2.vertices=nodelist(:,2:end);
-geom2.vertices_orig=nodelist(:,2:end);
-save('muscle_geom_orig.mat');
+% geom2.faces=elemlist_renum(:,2:end);
+% geom2.vertices=nodelist(:,2:end);
+% geom2.vertices_orig=nodelist(:,2:end);
+% save('muscle_geom_orig.mat');
 
 % load('muscle_geom_orig.mat');
 %% Define Gap Threshold
     
     % gap to achieve in final meshes in unit of mesh
-    desired_gap=.01;
+    desired_gap=15;
     %1 = fixed geom 1 moving geom 2.
     % 0 = moving geom 1, fixed geom 2.
-    relative_gap_weight=0;
-    element_3d_type=[1,0];
+    relative_gap_weight=0.5;
+    element_3d_type=[0,0];
     use_parallel_loops=1;
+
+    % good parameters for 2D and 3D
+%     smoothing=50;
+%     rbf_iterations=300;
+
+    % good parameters for 2D and 2D
+        smoothing=1000;
+        rbf_iterations=1000;
 %% load initial geometries
 %     load stls
 %     [geom2.faces, geom2.vertices]=stlRead2('VHFL_Left_Bone_Femur.stl');
@@ -248,8 +261,13 @@ while total_error < -.1
         geom2.vertices_rand(:,3),'ro')
     hold on
     if norm(geom1_surf_to_geom2_vector)>0
-        arrow3(geom2.vertices_rand,geom1_surf_to_geom2_vector+geom2.vertices_rand)
+%         arrow3(geom2.vertices_rand,geom1_surf_to_geom2_vector+geom2.vertices_rand)
+        quiver3(geom2.vertices_rand(:,1),geom2.vertices_rand(:,2),geom2.vertices_rand(:,3),...
+            geom1_surf_to_geom2_vector(:,1).*geom1_surf_to_geom2_point_distance,...
+            geom1_surf_to_geom2_vector(:,2).*geom1_surf_to_geom2_point_distance,...
+            geom1_surf_to_geom2_vector(:,3).*geom1_surf_to_geom2_point_distance,'k');
     end
+    patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
     axis equal
 
     geom1_deform_reduce_fig=figure();
@@ -257,17 +275,16 @@ while total_error < -.1
         geom1.vertices_rand(:,3),'ro')
     hold on
     if norm(geom2_surf_to_geom1_vector)>0
-        arrow3(geom1.vertices_rand,geom2_surf_to_geom1_vector+geom1.vertices_rand)
+%         arrow3(geom1.vertices_rand,geom2_surf_to_geom1_vector+geom1.vertices_rand)
+        quiver3(geom1.vertices_rand(:,1),geom1.vertices_rand(:,2),geom1.vertices_rand(:,3),...
+            -geom2_surf_to_geom1_vector(:,1).*geom2_surf_to_geom1_point_distance,...
+            -geom2_surf_to_geom1_vector(:,2).*geom2_surf_to_geom1_point_distance,...
+            -geom2_surf_to_geom1_vector(:,3).*geom2_surf_to_geom1_point_distance,'k');
     end
+    patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
     axis equal
     %% create Radial Basis Approximation
-    % good parameters for 2D and 3D
-    smoothing=50;
-    rbf_iterations=300;
-    
-    % good parameters for 2D and 2D
-%     smoothing=1000;
-%     rbf_iterations=1000;
+
     rbf_timer=tic();
 
 
