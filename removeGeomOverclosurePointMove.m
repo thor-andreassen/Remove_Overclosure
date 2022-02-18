@@ -4,7 +4,7 @@ close all
 clc
 
 %% load geoms
-[geom1.faces,geom1.vertices]=stlRead2('glut_max_test_5d0.stl');
+[geom1.faces,geom1.vertices]=stlRead2('glut_max_test_0d01.stl');
 geom1.vertices_orig=geom1.vertices;
 
 % [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('CART1-FEMUR-S192803L_2.inp');
@@ -13,7 +13,7 @@ geom1.vertices_orig=geom1.vertices;
 % geom1.vertices=nodelist(:,2:end);
 % geom1.vertices_orig=nodelist(:,2:end);
 
-[geom2.faces,geom2.vertices]=stlRead2('glut_med_test_5d0.stl');
+[geom2.faces,geom2.vertices]=stlRead2('glut_med_test_0d01.stl');
 geom2.vertices_orig=geom2.vertices;
 % [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('BONE1-FEMUR-S192803L.inp');
 % [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('tri_cone.inp');
@@ -33,18 +33,13 @@ geom2.vertices_orig=geom2.vertices;
     element_3d_type=[0,0];
     use_parallel_loops=1;
 
-    
-    smoothing_improve=0;
-    plot_surf=0;
     % good parameters for 2D and 3D
 %     smoothing=50;
 %     rbf_iterations=300;
 
     % good parameters for 2D and 2D
-%         smoothing=1000;
-%         rbf_iterations=1000;
         smoothing=1000;
-        rbf_iterations=400;
+        rbf_iterations=1000;
 %% load initial geometries
 %     load stls
 %     [geom2.faces, geom2.vertices]=stlRead2('VHFL_Left_Bone_Femur.stl');
@@ -87,7 +82,10 @@ geom2.vertices_orig=geom2.vertices;
 
 total_error=-Inf;
 counter=1;
-while total_error < -.1
+previous_repeat=[1,1];
+
+repeat=1;
+while total_error < -.001
 
     %% Reduced Mesh
     rand_ratio=.75;
@@ -107,11 +105,13 @@ while total_error < -.1
             % element is 2D
             if size(geom1.faces,2)==3
                     % element is a tri
-                    geom1_mesh_reduction_factor=750;
-%                     geom1_mesh_reduction_factor=2000;
-                    temp=reducepatch(geom1.faces,geom1.vertices,geom1_mesh_reduction_factor);
-                    geom1.faces_reduce=temp.faces;
-                    geom1.vertices_reduce=temp.vertices;
+                    geom1_mesh_reduction_factor=2000;
+%                     temp=reducepatch(geom1.faces,geom1.vertices,geom1_mesh_reduction_factor);
+%                     geom1.faces_reduce=temp.faces;
+%                     geom1.vertices_reduce=temp.vertices;
+%                     geom1_reduce_type_Q4=0;
+                    geom1.faces_reduce=geom1.faces;
+                    geom1.vertices_reduce=geom1.vertices;
                     geom1_reduce_type_Q4=0;
             else
                     % element is a quad
@@ -136,12 +136,14 @@ while total_error < -.1
            % element is 2D
            if size(geom2.faces,2)==3
                     % element is a tri
-                    geom2_mesh_reduction_factor=750;
-%                    geom2_mesh_reduction_factor=2000;
-                   temp=reducepatch(geom2.faces,geom2.vertices,geom2_mesh_reduction_factor);
-                   geom2.faces_reduce=temp.faces;
-                   geom2.vertices_reduce=temp.vertices;
-                   geom2_reduce_type_Q4=0;
+                   geom2_mesh_reduction_factor=2000;
+%                    temp=reducepatch(geom2.faces,geom2.vertices,geom2_mesh_reduction_factor);
+%                    geom2.faces_reduce=temp.faces;
+%                    geom2.vertices_reduce=temp.vertices;
+%                    geom2_reduce_type_Q4=0;
+                    geom2.faces_reduce=geom2.faces;
+                    geom2.vertices_reduce=geom2.vertices;
+                    geom2_reduce_type_Q4=0;
            else
                    % element is a quad
                    geom2_reduce_type_Q4=1;
@@ -232,93 +234,53 @@ while total_error < -.1
     geom_master_deform_vector=[geom1_surf_to_geom2_vector;-geom2_surf_to_geom1_vector];
     geom_master_positions=[geom2.vertices_rand;geom1.vertices_rand];
     
-%     geom1_surf_to_geom2_point_distance_dir=sign(geom1_surf_to_geom2_point_distance);
-%     geom1_surf_to_geom2_point_distance=geom1_surf_to_geom2_point_distance-desired_gap;
-%     geom1_surf_to_geom2_vector=geom1_surf_to_geom2_point_points;
-%     for count_vertex=1:length(geom1_surf_to_geom2_point_distance)
-%         if geom1_surf_to_geom2_point_distance(count_vertex)>0
-%             geom1_surf_to_geom2_point_distance(count_vertex)=0;
-%             multiplier=0;
-%         else
-%             multiplier=1;
-%         end
-%         geom1_surf_to_geom2_vector(count_vertex,:)=-geom1_surf_to_geom2_point_distance_dir(count_vertex)*(geom1_surf_to_geom2_point_points(count_vertex,:)...
-%             -geom2.vertices_reduce(count_vertex,:))*(1-relative_gap_weight)*multiplier;
-%     end
-% 
-% 
-% 
-%     geom2_surf_to_geom1_point_distance_dir=sign(geom2_surf_to_geom1_point_distance);
-%     geom2_surf_to_geom1_point_distance=geom2_surf_to_geom1_point_distance-desired_gap;
-%     geom2_surf_to_geom1_vector=geom2_surf_to_geom1_point_points;
-%     for count_vertex=1:length(geom2_surf_to_geom1_point_distance)
-%         if geom2_surf_to_geom1_point_distance(count_vertex)>0
-%             geom2_surf_to_geom1_point_distance(count_vertex)=0;
-%             multiplier=0;
-%         else
-%             multiplier=1;
-%         end
-%         geom2_surf_to_geom1_vector(count_vertex,:)=-geom2_surf_to_geom1_point_distance_dir(count_vertex)*(geom2_surf_to_geom1_point_points(count_vertex,:)...
-%             -geom1.vertices_reduce(count_vertex,:))*relative_gap_weight*multiplier;
-%     end
 
     %% Create arrow deformation plot
-    if plot_surf==1
-        geom2_deform_reduce_fig=figure();
-        plot3(geom2.vertices_rand(:,1),geom2.vertices_rand(:,2),...
-            geom2.vertices_rand(:,3),'ro')
-        hold on
-        if norm(geom1_surf_to_geom2_vector)>0
-    %         arrow3(geom2.vertices_rand,geom1_surf_to_geom2_vector+geom2.vertices_rand)
-            quiver3(geom2.vertices_rand(:,1),geom2.vertices_rand(:,2),geom2.vertices_rand(:,3),...
-                geom1_surf_to_geom2_vector(:,1).*geom1_surf_to_geom2_point_distance,...
-                geom1_surf_to_geom2_vector(:,2).*geom1_surf_to_geom2_point_distance,...
-                geom1_surf_to_geom2_vector(:,3).*geom1_surf_to_geom2_point_distance,'k');
-        end
-        patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
-        axis equal
-
-        geom1_deform_reduce_fig=figure();
-        plot3(geom1.vertices_rand(:,1),geom1.vertices_rand(:,2),...
-            geom1.vertices_rand(:,3),'ro')
-        hold on
-        if norm(geom2_surf_to_geom1_vector)>0
-    %         arrow3(geom1.vertices_rand,geom2_surf_to_geom1_vector+geom1.vertices_rand)
-            quiver3(geom1.vertices_rand(:,1),geom1.vertices_rand(:,2),geom1.vertices_rand(:,3),...
-                -geom2_surf_to_geom1_vector(:,1).*geom2_surf_to_geom1_point_distance,...
-                -geom2_surf_to_geom1_vector(:,2).*geom2_surf_to_geom1_point_distance,...
-                -geom2_surf_to_geom1_vector(:,3).*geom2_surf_to_geom1_point_distance,'k');
-        end
-        patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
-        axis equal
+    geom2_deform_reduce_fig=figure();
+    plot3(geom2.vertices_rand(:,1),geom2.vertices_rand(:,2),...
+        geom2.vertices_rand(:,3),'ro')
+    hold on
+    if norm(geom1_surf_to_geom2_vector)>0
+%         arrow3(geom2.vertices_rand,geom1_surf_to_geom2_vector+geom2.vertices_rand)
+        quiver3(geom2.vertices_rand(:,1),geom2.vertices_rand(:,2),geom2.vertices_rand(:,3),...
+            geom1_surf_to_geom2_vector(:,1).*geom1_surf_to_geom2_point_distance,...
+            geom1_surf_to_geom2_vector(:,2).*geom1_surf_to_geom2_point_distance,...
+            geom1_surf_to_geom2_vector(:,3).*geom1_surf_to_geom2_point_distance,'k');
     end
+    patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
+    axis equal
+
+    geom1_deform_reduce_fig=figure();
+    plot3(geom1.vertices_rand(:,1),geom1.vertices_rand(:,2),...
+        geom1.vertices_rand(:,3),'ro')
+    hold on
+    if norm(geom2_surf_to_geom1_vector)>0
+%         arrow3(geom1.vertices_rand,geom2_surf_to_geom1_vector+geom1.vertices_rand)
+        quiver3(geom1.vertices_rand(:,1),geom1.vertices_rand(:,2),geom1.vertices_rand(:,3),...
+            -geom2_surf_to_geom1_vector(:,1).*geom2_surf_to_geom1_point_distance,...
+            -geom2_surf_to_geom1_vector(:,2).*geom2_surf_to_geom1_point_distance,...
+            -geom2_surf_to_geom1_vector(:,3).*geom2_surf_to_geom1_point_distance,'k');
+    end
+    patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
+    axis equal
     %% create Radial Basis Approximation
 
     rbf_timer=tic();
 
-
-
-geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
-        1E-6,smoothing,rbf_iterations);
-    
-%     geom_deform_vec_rbf=newrbe(geom_master_positions',geom_master_deform_vector',1000);
-   
-
-
     %% Determine Original Deformations
-    use_parallel=1;
-    if use_parallel
-            geom2_deform_orig_vec=sim(geom_deform_vec_rbf,geom2.vertices','useParallel','yes');
-            geom2_deform_orig_vec=geom2_deform_orig_vec'*(relative_gap_weight);
-            geom1_deform_orig_vec=sim(geom_deform_vec_rbf,geom1.vertices','useParallel','yes');
-            geom1_deform_orig_vec=-geom1_deform_orig_vec'*(1-relative_gap_weight);
-    
-    else
-            geom2_deform_orig_vec=sim(geom_deform_vec_rbf,geom2.vertices');
-            geom2_deform_orig_vec=geom2_deform_orig_vec'*(relative_gap_weight);
-            geom1_deform_orig_vec=sim(geom_deform_vec_rbf,geom1.vertices');
-            geom1_deform_orig_vec=-geom1_deform_orig_vec'*(1-relative_gap_weight);
-    end
+%     use_parallel=1;
+%     if use_parallel
+%             geom2_deform_orig_vec=sim(geom_deform_vec_rbf,geom2.vertices','useParallel','yes');
+%             geom2_deform_orig_vec=geom2_deform_orig_vec'*(relative_gap_weight);
+%             geom1_deform_orig_vec=sim(geom_deform_vec_rbf,geom1.vertices','useParallel','yes');
+%             geom1_deform_orig_vec=-geom1_deform_orig_vec'*(1-relative_gap_weight);
+%     
+%     else
+%             geom2_deform_orig_vec=sim(geom_deform_vec_rbf,geom2.vertices');
+%             geom2_deform_orig_vec=geom2_deform_orig_vec'*(relative_gap_weight);
+%             geom1_deform_orig_vec=sim(geom_deform_vec_rbf,geom1.vertices');
+%             geom1_deform_orig_vec=-geom1_deform_orig_vec'*(1-relative_gap_weight);
+%     end
     %% Plot original deformations
 %     geom2_deform_orig_fig=figure();
 %     for count_face=1:size(geom2.faces,1)
@@ -357,7 +319,7 @@ geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
 %     plot3(geom2.vertices(:,1),geom2.vertices(:,2),...
 %         geom2.vertices(:,3),'ro');
 %     hold on
-    geom2.vertices=geom2.vertices+geom2_deform_orig_vec;
+    geom2.vertices=geom2.vertices+geom1_surf_to_geom2_vector;
 %     plot3(geom2.vertices(:,1),geom2.vertices(:,2),...
 %         geom2.vertices(:,3),'bo');
 %     if norm(geom1_surf_to_geom2_vector)>0
@@ -368,59 +330,46 @@ geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
 %     plot3(geom1.vertices(:,1),geom1.vertices(:,2),...
 %         geom1.vertices(:,3),'ro');
 %     hold on
-    geom1.vertices=geom1.vertices+geom1_deform_orig_vec;
+    geom1.vertices=geom1.vertices+geom2_surf_to_geom1_vector;
 %     plot3(geom1.vertices(:,1),geom1.vertices(:,2),...
 %         geom1.vertices(:,3),'bo');
 %     if norm(geom2_surf_to_geom1_vector)>0
 %         arrow3(geom1.vertices_reduce,geom2_surf_to_geom1_vector+geom1.vertices_reduce+.0001)
 %     end
+    
+    
+    %% smooth geom
+    temp_geom.faces=geom1.faces;
+    temp_geom.vertices=geom1.vertices;
+    smooth_geom=smoothpatch(temp_geom,1,10);
+    geom1.faces=smooth_geom.faces;
+    geom1.vertices=smooth_geom.vertices;
+    
+    temp_geom.faces=geom2.faces;
+    temp_geom.vertices=geom2.vertices;
+    smooth_geom=smoothpatch(temp_geom,1,10);
+    geom2.faces=smooth_geom.faces;
+    geom2.vertices=smooth_geom.vertices;
+    
     %% Display Original Min Gap
     geom2_error=min(geom1_surf_to_geom2_point_distance);
     geom1_error=min(geom2_surf_to_geom1_point_distance);
     table(geom2_error,geom1_error)
     total_error=min([geom2_error,geom1_error]);
+    
+    if total_error<-.001 && repeat==1
+        total_error=-Inf;
+        repeat=0;
+    elseif total_error<-.001 && repeat==0
+        total_error=0;
+        repeat=0;
+    end
+    
     %% Save new stls
 %     stlWrite2('VHFL_Left_Bone_Femur_test.stl',geom2.faces,geom2.vertices);
 %     stlWrite2('VHFL_Muscle_VastusIntermedius_test.stl',geom1.faces,geom1.vertices);
     
 %     close all
-
-    counter=counter+1;
-    try
-        if mod(counter,10)==0 && smoothing_improve==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0
-            geom1.vertices=improveTriMeshQuality(geom1.faces,geom1.vertices,2,1,.001);
-        end
-    catch
-        disp('geom1 mesh improvement failed');
-    end
-    
-    
-    try
-        if mod(counter,10)==0 && smoothing_improve==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0
-            geom2.vertices=improveTriMeshQuality(geom2.faces,geom2.vertices,2,1,.001);
-        end
-    catch
-        disp('geom1 mesh improvement failed');
-    end
     save('muscle_geom_orig.mat','geom2','geom1');
+    counter=counter+1;
 end
-
-
-try
-    if smoothing_improve==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0
-        geom1.vertices=improveTriMeshQuality(geom1.faces,geom1.vertices,2,2,.001);
-    end
-catch
-    disp('geom1 mesh improvement failed');
-end
-
-
-try
-    if smoothing_improve==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0
-        geom2.vertices=improveTriMeshQuality(geom2.faces,geom2.vertices,2,2,.001);
-    end
-catch
-    disp('geom1 mesh improvement failed');
-end
-
-save('muscle_geom_orig.mat','geom2','geom1');
