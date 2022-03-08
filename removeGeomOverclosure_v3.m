@@ -7,24 +7,27 @@ clc
 % [geom1.faces,geom1.vertices]=stlRead2('glut_max_test_5d0.stl');
 % geom1.vertices_orig=geom1.vertices;
 
-[nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('CART1-FEMUR-S192803L_2.inp');
-geom1.faces=elemlist_renum(:,2:end);
-geom1.vertices=nodelist(:,2:end);
-geom1.vertices_orig=nodelist(:,2:end);
+% [nodelist1,elemlist1,elemlist1_renum]=READ_MESH_NUMS_AJC('CART1-FEMUR-S192803L_2.inp');
+% geom1.faces=elemlist1_renum(:,2:end);
+% geom1.vertices=nodelist1(:,2:end);
+% geom1.vertices_orig=nodelist1(:,2:end);
+% geom1.elemlist=elemlist1;
+% geom1.nodelist=nodelist1;
+% % [geom2.faces,geom2.vertices]=stlRead2('glut_med_test_5d0.stl');
+% % geom2.vertices_orig=geom2.vertices;
+% [nodelist2,elemlist2,elemlist_renum2]=READ_MESH_NUMS_AJC('BONE1-FEMUR-S192803L.inp');
+% geom2.faces=elemlist_renum2(:,2:end);
+% geom2.vertices=nodelist2(:,2:end);
+% geom2.vertices_orig=nodelist2(:,2:end);
+% geom2.elemlist=elemlist2;
+% geom2.nodelist=nodelist2;
+% save('muscle_geom_orig.mat');
 
-% [geom2.faces,geom2.vertices]=stlRead2('glut_med_test_5d0.stl');
-% geom2.vertices_orig=geom2.vertices;
-[nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('BONE1-FEMUR-S192803L.inp');
-geom2.faces=elemlist_renum(:,2:end);
-geom2.vertices=nodelist(:,2:end);
-geom2.vertices_orig=nodelist(:,2:end);
-save('muscle_geom_orig.mat');
-
-% load('muscle_geom_orig.mat');
+load('muscle_geom_orig.mat');
 %% Define Gap Threshold
     
     % gap to achieve in final meshes in unit of mesh
-    desired_gap=.05;
+    desired_gap=.02;
     %1 = fixed geom 1 moving geom 2.
     % 0 = moving geom 1, fixed geom 2.
     relative_gap_weight=0;
@@ -35,9 +38,17 @@ save('muscle_geom_orig.mat');
     smoothing_improve=0;
     plot_surf=0;
     % good parameters for 2D and 3D
-    smoothing=50;
+%     smoothing=50;
+%     rbf_iterations=300;
+    smoothing=25;
     rbf_iterations=300;
 
+
+    % reduction factor initial
+    geom1_mesh_reduction_factor=.95;
+    geom2_mesh_reduction_factor=.95;
+    scale_percent_factor=1.05;
+    
     % good parameters for 2D and 2D
 %         smoothing=1000;
 %         rbf_iterations=1000;
@@ -105,8 +116,9 @@ while total_error < -.1
             % element is 2D
             if size(geom1.faces,2)==3
                     % element is a tri
-                    geom1_mesh_reduction_factor=750;
+%                     geom1_mesh_reduction_factor=750;
 %                     geom1_mesh_reduction_factor=2000;
+                   geom1_mesh_reduction_factor=scaleInputReductionFactor(geom1_mesh_reduction_factor,scale_percent_factor);
                     temp=reducepatch(geom1.faces,geom1.vertices,geom1_mesh_reduction_factor);
                     geom1.faces_reduce=temp.faces;
                     geom1.vertices_reduce=temp.vertices;
@@ -134,8 +146,9 @@ while total_error < -.1
            % element is 2D
            if size(geom2.faces,2)==3
                     % element is a tri
-                    geom2_mesh_reduction_factor=750;
+%                     geom2_mesh_reduction_factor=750;
 %                    geom2_mesh_reduction_factor=2000;
+                   geom2_mesh_reduction_factor=scaleInputReductionFactor(geom2_mesh_reduction_factor,scale_percent_factor);
                    temp=reducepatch(geom2.faces,geom2.vertices,geom2_mesh_reduction_factor);
                    geom2.faces_reduce=temp.faces;
                    geom2.vertices_reduce=temp.vertices;
@@ -178,7 +191,7 @@ while total_error < -.1
     elseif geom1_reduce_type_Q4==1
         % mesh geometry is quad
         [geom1_surf_to_geom2_point_points,geom1_surf_to_geom2_point_distance]=...
-                getPointToQ4Mesh(geom1.faces_reduce,geom1.vertices_reduce,geom2.vertices_rand,use_parallel_loops);
+                getPointToQ4MeshApproximate(geom1.faces_reduce,geom1.vertices_reduce,geom2.vertices_rand,use_parallel_loops);
     end
     
     if geom2_reduce_type_Q4==0
@@ -191,7 +204,7 @@ while total_error < -.1
     elseif geom2_reduce_type_Q4==1
        % mesh geometry is quad
        [geom2_surf_to_geom1_point_points,geom2_surf_to_geom1_point_distance]=...
-                getPointToQ4Mesh(geom2.faces_reduce,geom2.vertices_reduce,geom1.vertices_rand,use_parallel_loops);
+                getPointToQ4MeshApproximate(geom2.faces_reduce,geom2.vertices_reduce,geom1.vertices_rand,use_parallel_loops);
     end
 
 

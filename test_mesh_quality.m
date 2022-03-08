@@ -1,11 +1,11 @@
-%% clear
-clear
-close all
-clc
-
-
-%% load data
-load('muscle_geom_orig.mat');
+% %% clear
+% clear
+% close all
+% clc
+% 
+% 
+% %% load data
+% load('muscle_geom_orig.mat');
 
 geom_temp.faces=[geom1.faces;geom2.faces+size(geom1.vertices,1)];
 geom_temp.vertices=[geom1.vertices;geom2.vertices];
@@ -23,8 +23,8 @@ end
 
 %% Get Mesh Displacements
 disps=vecnorm(geom_temp.vertices-geom_temp.vertices_orig,2,2);
-min_disps=quantile(disps,.05);
-max_disps=quantile(disps,.95);
+min_disps=quantile(disps,.01);
+max_disps=quantile(disps,.99);
 mean_disps=mean(disps);
 median_disps=median(disps);
 disps_ratio_table=table(min_disps,median_disps,max_disps,mean_disps)
@@ -32,21 +32,21 @@ disps_ratio_table=table(min_disps,median_disps,max_disps,mean_disps)
 
 %% get Dihedral Face Angle
 edge_angles=getAllEdgeAngles(geom_temp.faces,geom_temp.vertices);
-min_edge_angles=quantile(edge_angles,.05);
-max_edge_angles=quantile(edge_angles,.95);
+min_edge_angles=quantile(edge_angles,.01);
+max_edge_angles=quantile(edge_angles,.99);
 mean_edge_angles=mean(edge_angles);
 median_edge_angles=median(edge_angles);
 edge_angles_ratio_table=table(min_edge_angles,median_edge_angles,max_edge_angles,mean_edge_angles)
 %% report data
 
-min_aspect=quantile(aspects,.05);
-max_aspect=quantile(aspects,.95);
+min_aspect=quantile(aspects,.01);
+max_aspect=quantile(aspects,.99);
 mean_aspect=mean(aspects);
 median_aspect=median(aspects);
 aspect_ratio_table=table(min_aspect,median_aspect,max_aspect,mean_aspect)
 
-min_skew=quantile(skewness,.05);
-max_skew=quantile(skewness,.95);
+min_skew=quantile(skewness,.01);
+max_skew=quantile(skewness,.99);
 mean_skew=mean(skewness);
 median_skew=median(skewness);
 skew_ratio_table=table(min_skew,median_skew,max_skew,mean_skew)
