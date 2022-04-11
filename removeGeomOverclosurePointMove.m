@@ -4,23 +4,27 @@ close all
 clc
 
 %% load geoms
-[geom1.faces,geom1.vertices]=stlRead2('glut_max_test_0d01.stl');
-geom1.vertices_orig=geom1.vertices;
+%% load geoms
+% [geom1.faces,geom1.vertices]=stlRead2('glut_max_test_5d0.stl');
+% geom1.vertices_orig=geom1.vertices;
 
-% [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('CART1-FEMUR-S192803L_2.inp');
-% [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('hex_cylinder.inp');
-% geom1.faces=elemlist_renum(:,2:end);
-% geom1.vertices=nodelist(:,2:end);
-% geom1.vertices_orig=nodelist(:,2:end);
+[nodelist1,elemlist1,elemlist1_renum]=READ_MESH_NUMS_AJC('CART1-FEMUR-S192803L_2.inp');
+geom1.faces=elemlist1_renum(:,2:end);
+geom1.vertices=nodelist1(:,2:end);
+geom1.vertices_orig=nodelist1(:,2:end);
+geom1.elemlist=elemlist1;
+geom1.nodelist=nodelist1;
 
-[geom2.faces,geom2.vertices]=stlRead2('glut_med_test_0d01.stl');
-geom2.vertices_orig=geom2.vertices;
-% [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('BONE1-FEMUR-S192803L.inp');
-% [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('tri_cone.inp');
-% geom2.faces=elemlist_renum(:,2:end);
-% geom2.vertices=nodelist(:,2:end);
-% geom2.vertices_orig=nodelist(:,2:end);
-% save('muscle_geom_orig.mat');
+% % [geom2.faces,geom2.vertices]=stlRead2('glut_med_test_5d0.stl');
+% % geom2.vertices_orig=geom2.vertices;
+
+[nodelist2,elemlist2,elemlist_renum2]=READ_MESH_NUMS_AJC('BONE1-FEMUR-S192803L.inp');
+geom2.faces=elemlist_renum2(:,2:end);
+geom2.vertices=nodelist2(:,2:end);
+geom2.vertices_orig=nodelist2(:,2:end);
+geom2.elemlist=elemlist2;
+geom2.nodelist=nodelist2;
+save('muscle_geom_orig.mat');
 
 % load('muscle_geom_orig.mat');
 %% Define Gap Threshold
@@ -30,12 +34,16 @@ geom2.vertices_orig=geom2.vertices;
     %1 = fixed geom 1 moving geom 2.
     % 0 = moving geom 1, fixed geom 2.
     relative_gap_weight=0.5;
-    element_3d_type=[0,0];
+    element_3d_type=[1,0];
     use_parallel_loops=1;
 
     % good parameters for 2D and 3D
 %     smoothing=50;
 %     rbf_iterations=300;
+
+    geom1_mesh_reduction_factor=1.0;
+    geom2_mesh_reduction_factor=1.0;
+    scale_percent_factor=1.05;
 
     % good parameters for 2D and 2D
         smoothing=1000;
@@ -95,7 +103,7 @@ while total_error < -.001
             [geom1.faces_reduce,geom1.vertices_reduce]=renumberFacesAndVertices(face_outer_surf,geom1.vertices);
             temp_rand=randperm(size(geom1_inner_nodes,1));
             temp_rand_val=temp_rand(1:ceil(size(geom1_inner_nodes,1)*rand_ratio));
-            geom1.vertices_rand=[geom1.vertices_reduce;geom1.vertices(temp_rand_val,:)];
+            geom1.vertices_rand=geom1.vertices;
             if size(geom1.faces_reduce,2)==4
                     geom1_reduce_type_Q4=1;
             else
@@ -105,14 +113,19 @@ while total_error < -.001
             % element is 2D
             if size(geom1.faces,2)==3
                     % element is a tri
-                    geom1_mesh_reduction_factor=2000;
-%                     temp=reducepatch(geom1.faces,geom1.vertices,geom1_mesh_reduction_factor);
-%                     geom1.faces_reduce=temp.faces;
-%                     geom1.vertices_reduce=temp.vertices;
-%                     geom1_reduce_type_Q4=0;
-                    geom1.faces_reduce=geom1.faces;
-                    geom1.vertices_reduce=geom1.vertices;
-                    geom1_reduce_type_Q4=0;
+%                     geom1_mesh_reduction_factor=750;
+%                     geom1_mesh_reduction_factor=2000;
+                   geom1_mesh_reduction_factor=scaleInputReductionFactor(geom1_mesh_reduction_factor,scale_percent_factor);
+                   if  geom1_mesh_reduction_factor<1
+                       temp=reducepatch(geom1.faces,geom1.vertices,geom1_mesh_reduction_factor);
+                        geom1.faces_reduce=temp.faces;
+                        geom1.vertices_reduce=temp.vertices;
+                        geom1_reduce_type_Q4=0;
+                   else
+                       geom1.faces_reduce=geom1.faces;
+                        geom1.vertices_reduce=geom1.vertices;
+                        geom1_reduce_type_Q4=0;
+                   end
             else
                     % element is a quad
                     geom1_reduce_type_Q4=1;
@@ -126,7 +139,7 @@ while total_error < -.001
             [geom2.faces_reduce,geom2.vertices_reduce]=renumberFacesAndVertices(face_outer_surf,geom2.vertices);
             temp_rand=randperm(size(geom2_inner_nodes,1));
             temp_rand_val=temp_rand(1:ceil(size(geom2_inner_nodes,1)*rand_ratio));
-            geom2.vertices_rand=[geom2.vertices_reduce;geom2.vertices(temp_rand_val,:)];
+            geom2.vertices_rand=geom2.vertices;
             if size(geom2.faces_reduce,2)==4
                     geom2_reduce_type_Q4=1;
             else
@@ -136,21 +149,25 @@ while total_error < -.001
            % element is 2D
            if size(geom2.faces,2)==3
                     % element is a tri
-                   geom2_mesh_reduction_factor=2000;
-%                    temp=reducepatch(geom2.faces,geom2.vertices,geom2_mesh_reduction_factor);
-%                    geom2.faces_reduce=temp.faces;
-%                    geom2.vertices_reduce=temp.vertices;
-%                    geom2_reduce_type_Q4=0;
-                    geom2.faces_reduce=geom2.faces;
-                    geom2.vertices_reduce=geom2.vertices;
-                    geom2_reduce_type_Q4=0;
+%                     geom2_mesh_reduction_factor=750;
+%                    geom2_mesh_reduction_factor=2000;
+                   geom2_mesh_reduction_factor=scaleInputReductionFactor(geom2_mesh_reduction_factor,scale_percent_factor);
+                   if geom2_mesh_reduction_factor<1
+                       temp=reducepatch(geom2.faces,geom2.vertices,geom2_mesh_reduction_factor);
+                       geom2.faces_reduce=temp.faces;
+                       geom2.vertices_reduce=temp.vertices;
+                       geom2_reduce_type_Q4=0;
+                   else
+                       geom2.faces_reduce=geom2.faces;
+                       geom2.vertices_reduce=geom2.vertices;
+                       geom2_reduce_type_Q4=0;
+                   end
            else
                    % element is a quad
                    geom2_reduce_type_Q4=1;
            end
            geom2.vertices_rand=geom2.vertices_reduce;
    end
-
 
     %% initial plots
 %     geom2_fig=figure()
@@ -199,7 +216,6 @@ while total_error < -.001
     end
 
 
-    %% Determine Gaps
     
     geom1_surf_to_geom2_point_distance_dir=sign(geom1_surf_to_geom2_point_distance);
     geom1_surf_to_geom2_point_distance=geom1_surf_to_geom2_point_distance-desired_gap;
@@ -229,12 +245,6 @@ while total_error < -.001
             -geom1.vertices_rand(count_vertex,:))*multiplier;
     end
     
-    % deform vector is vector needed to deform nodes located from the
-    % Surface to the ndoes wheres teh vector is defined. 
-    geom_master_deform_vector=[geom1_surf_to_geom2_vector;-geom2_surf_to_geom1_vector];
-    geom_master_positions=[geom2.vertices_rand;geom1.vertices_rand];
-    
-
     %% Create arrow deformation plot
     geom2_deform_reduce_fig=figure();
     plot3(geom2.vertices_rand(:,1),geom2.vertices_rand(:,2),...
@@ -339,17 +349,17 @@ while total_error < -.001
     
     
     %% smooth geom
-    temp_geom.faces=geom1.faces;
-    temp_geom.vertices=geom1.vertices;
-    smooth_geom=smoothpatch(temp_geom,1,10);
-    geom1.faces=smooth_geom.faces;
-    geom1.vertices=smooth_geom.vertices;
-    
-    temp_geom.faces=geom2.faces;
-    temp_geom.vertices=geom2.vertices;
-    smooth_geom=smoothpatch(temp_geom,1,10);
-    geom2.faces=smooth_geom.faces;
-    geom2.vertices=smooth_geom.vertices;
+%     temp_geom.faces=geom1.faces;
+%     temp_geom.vertices=geom1.vertices;
+%     smooth_geom=smoothpatch(temp_geom,1,10);
+%     geom1.faces=smooth_geom.faces;
+%     geom1.vertices=smooth_geom.vertices;
+%     
+%     temp_geom.faces=geom2.faces;
+%     temp_geom.vertices=geom2.vertices;
+%     smooth_geom=smoothpatch(temp_geom,1,10);
+%     geom2.faces=smooth_geom.faces;
+%     geom2.vertices=smooth_geom.vertices;
     
     %% Display Original Min Gap
     geom2_error=min(geom1_surf_to_geom2_point_distance);

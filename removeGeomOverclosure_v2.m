@@ -4,43 +4,44 @@ close all
 clc
 
 %% load geoms
-% [geom1.faces,geom1.vertices]=stlRead2('glut_max_test_5d0.stl');
+[geom1.faces,geom1.vertices]=stlRead2('glut_max_test_5d0.stl');
 % geom1.vertices_orig=geom1.vertices;
 
-[nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('CART1-FEMUR-S192803L_2.inp');
-geom1.faces=elemlist_renum(:,2:end);
-geom1.vertices=nodelist(:,2:end);
-geom1.vertices_orig=nodelist(:,2:end);
+% [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('CART1-FEMUR-S192803L_2.inp');
+% geom1.faces=elemlist_renum(:,2:end);
+% geom1.vertices=nodelist(:,2:end);
+% geom1.vertices_orig=nodelist(:,2:end);
 
-% [geom2.faces,geom2.vertices]=stlRead2('glut_med_test_5d0.stl');
+[geom2.faces,geom2.vertices]=stlRead2('glut_med_test_5d0.stl');
 % geom2.vertices_orig=geom2.vertices;
-[nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('BONE1-FEMUR-S192803L.inp');
-geom2.faces=elemlist_renum(:,2:end);
-geom2.vertices=nodelist(:,2:end);
-geom2.vertices_orig=nodelist(:,2:end);
+% [nodelist,elemlist,elemlist_renum]=READ_MESH_NUMS_AJC('BONE1-FEMUR-S192803L.inp');
+% geom2.faces=elemlist_renum(:,2:end);
+% geom2.vertices=nodelist(:,2:end);
+% geom2.vertices_orig=nodelist(:,2:end);
 save('muscle_geom_orig.mat');
 
 % load('muscle_geom_orig.mat');
 %% Define Gap Threshold
     
     % gap to achieve in final meshes in unit of mesh
-    desired_gap=.05;
+    desired_gap=15;
     %1 = fixed geom 1 moving geom 2.
     % 0 = moving geom 1, fixed geom 2.
-    relative_gap_weight=0;
-    element_3d_type=[1,0];
+    relative_gap_weight=0.5;
+    element_3d_type=[0,0];
     use_parallel_loops=1;
 
     
     smoothing_improve=0;
     plot_surf=0;
+    save_history=1;
     % good parameters for 2D and 3D
-    smoothing=50;
-    rbf_iterations=300;
+%     smoothing=50;
+%     rbf_iterations=300;
 
     % good parameters for 2D and 2D
-%         smoothing=1000;
-%         rbf_iterations=1000;
+        smoothing=1000;
+        rbf_iterations=1000;
 %         smoothing=1000;
 %         rbf_iterations=400;
 %% load initial geometries
@@ -318,37 +319,34 @@ geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
             geom1_deform_orig_vec=-geom1_deform_orig_vec'*(1-relative_gap_weight);
     end
     %% Plot original deformations
-%     geom2_deform_orig_fig=figure();
-%     for count_face=1:size(geom2.faces,1)
-%         nodel=geom2.faces(count_face,:);
-%         temp_vec=geom2_deform_orig_vec(nodel,:);
-%         temp_vec_mag=zeros(3,1);
-%         for count_vec=1:3
-%             temp_vec_mag(count_vec)=norm(temp_vec(count_vec,:));
-%         end
-%         patch(geom2.vertices(nodel,1),geom2.vertices(nodel,2),...
-%             geom2.vertices(nodel,3),temp_vec_mag);
-%         hold on
+%     
+%     if counter==1
+%         figure(2);
+%     else
+%         figure(2);
+%         clf
 %     end
+%     subplot(1,2,1);
+%     deform_norm=zeros(size(geom1_deform_orig_vec,1),1);
+%     for count_node=1:size(geom1_deform_orig_vec,1)
+%         deform_norm(count_node)=norm(geom1_deform_orig_vec(count_node,:));
+%     end
+%     deform_norm=deform_norm/max(deform_norm);
+%     p1=patch('Faces',geom1.faces,'Vertices',geom1.vertices,'FaceColor','interp','EdgeAlpha',.3,'FaceVertexCData',deform_norm);
 %     colorbar
 %     colormap jet
 %     
-%     
-%     geom1_deform_orig_fig=figure();
-%     for count_face=1:size(geom1.faces,1)
-%         nodel=geom1.faces(count_face,:);
-%         temp_vec=geom1_deform_orig_vec(nodel,:);
-%         temp_vec_mag=zeros(3,1);
-%         for count_vec=1:3
-%             temp_vec_mag(count_vec)=norm(temp_vec(count_vec,:));
-%         end
-%         patch(geom1.vertices(nodel,1),geom1.vertices(nodel,2),...
-%             geom1.vertices(nodel,3),temp_vec_mag);
-%         hold on
+%     subplot(1,2,2);
+%     deform_norm=zeros(size(geom2_deform_orig_vec,1),1);
+%     for count_node=1:size(geom2_deform_orig_vec,1)
+%         deform_norm(count_node)=norm(geom2_deform_orig_vec(count_node,:));
 %     end
+%     deform_norm=deform_norm/max(deform_norm);
+%     p2=patch('Faces',geom2.faces,'Vertices',geom2.vertices,'FaceColor','interp','EdgeAlpha',.3,'FaceVertexCData',deform_norm);
 %     colorbar
 %     colormap jet
-
+%     
+%     pause(1)
 
     %% Apply deformations
 %     deforgeom22_fig=figure()
@@ -356,6 +354,9 @@ geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
 %         geom2.vertices(:,3),'ro');
 %     hold on
     geom2.vertices=geom2.vertices+geom2_deform_orig_vec;
+    if save_history==1
+        geom2.vertices_history{counter}=geom2.vertices;
+    end
 %     plot3(geom2.vertices(:,1),geom2.vertices(:,2),...
 %         geom2.vertices(:,3),'bo');
 %     if norm(geom1_surf_to_geom2_vector)>0
@@ -367,6 +368,9 @@ geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
 %         geom1.vertices(:,3),'ro');
 %     hold on
     geom1.vertices=geom1.vertices+geom1_deform_orig_vec;
+    if save_history==1
+        geom1.vertices_history{counter}=geom1.vertices;
+    end
 %     plot3(geom1.vertices(:,1),geom1.vertices(:,2),...
 %         geom1.vertices(:,3),'bo');
 %     if norm(geom2_surf_to_geom1_vector)>0

@@ -4,15 +4,15 @@ close all
 clc
 
 %% load data
-load('femur_overclosure_adjustment_2.mat');
+load('femur_overclosure_adjustment_node.mat');
 
 %% create filename
-filename='S192803L_Femur_DEFORM_v3.inp';
+filename='S192803L_Femur_Cart_DEFORM_node.inp';
 
 %% data
 fid=fopen(filename,'w+');
-fprintf(fid,'*NODE,NSET=BONE-FEMUR-NODES\r\n');
-geom=geom2;
+fprintf(fid,'*NODE,NSET=CART-FEMUR-NODES\r\n');
+geom=geom1;
 
 geom.new_nodes=geom.nodelist;
 geom.new_nodes(:,2:end)=geom.vertices;
@@ -34,7 +34,7 @@ elseif size(geom.original_elements,2)==6
 elseif size(geom.original_elements,2)==9
     elem_type='C3D8R';
 end
-fprintf(fid,['*ELEMENT, TYPE=',elem_type,', ELSET=BONE-FEMUR-ELEMS\r\n']);
+fprintf(fid,['*ELEMENT, TYPE=',elem_type,', ELSET=CART-FEMUR-ELEMS\r\n']);
 for countelems=1:size(geom.elemlist,1)
     fprintf(fid,'%d, ',geom.original_elements(countelems,1));
     for count_node=2:size(geom.original_elements,2)

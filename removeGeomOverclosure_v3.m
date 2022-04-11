@@ -13,8 +13,10 @@ clc
 % geom1.vertices_orig=nodelist1(:,2:end);
 % geom1.elemlist=elemlist1;
 % geom1.nodelist=nodelist1;
+
 % % [geom2.faces,geom2.vertices]=stlRead2('glut_med_test_5d0.stl');
 % % geom2.vertices_orig=geom2.vertices;
+
 % [nodelist2,elemlist2,elemlist_renum2]=READ_MESH_NUMS_AJC('BONE1-FEMUR-S192803L.inp');
 % geom2.faces=elemlist_renum2(:,2:end);
 % geom2.vertices=nodelist2(:,2:end);
@@ -45,8 +47,8 @@ load('muscle_geom_orig.mat');
 
 
     % reduction factor initial
-    geom1_mesh_reduction_factor=.95;
-    geom2_mesh_reduction_factor=.95;
+    geom1_mesh_reduction_factor=1.0;
+    geom2_mesh_reduction_factor=1.0;
     scale_percent_factor=1.05;
     
     % good parameters for 2D and 2D
@@ -95,8 +97,9 @@ load('muscle_geom_orig.mat');
         % whether the elements inputted to each geometry are 3d or 2d respectively.
 
 total_error=-Inf;
+max_iters=150;
 counter=1;
-while total_error < -.1
+while total_error < -.1 && counter<max_iters
 
     %% Reduced Mesh
     rand_ratio=.75;
@@ -119,10 +122,16 @@ while total_error < -.1
 %                     geom1_mesh_reduction_factor=750;
 %                     geom1_mesh_reduction_factor=2000;
                    geom1_mesh_reduction_factor=scaleInputReductionFactor(geom1_mesh_reduction_factor,scale_percent_factor);
-                    temp=reducepatch(geom1.faces,geom1.vertices,geom1_mesh_reduction_factor);
-                    geom1.faces_reduce=temp.faces;
-                    geom1.vertices_reduce=temp.vertices;
-                    geom1_reduce_type_Q4=0;
+                   if  geom1_mesh_reduction_factor<1
+                       temp=reducepatch(geom1.faces,geom1.vertices,geom1_mesh_reduction_factor);
+                        geom1.faces_reduce=temp.faces;
+                        geom1.vertices_reduce=temp.vertices;
+                        geom1_reduce_type_Q4=0;
+                   else
+                       geom1.faces_reduce=geom1.faces;
+                        geom1.vertices_reduce=geom1.vertices;
+                        geom1_reduce_type_Q4=0;
+                   end
             else
                     % element is a quad
                     geom1_reduce_type_Q4=1;
@@ -149,10 +158,16 @@ while total_error < -.1
 %                     geom2_mesh_reduction_factor=750;
 %                    geom2_mesh_reduction_factor=2000;
                    geom2_mesh_reduction_factor=scaleInputReductionFactor(geom2_mesh_reduction_factor,scale_percent_factor);
-                   temp=reducepatch(geom2.faces,geom2.vertices,geom2_mesh_reduction_factor);
-                   geom2.faces_reduce=temp.faces;
-                   geom2.vertices_reduce=temp.vertices;
-                   geom2_reduce_type_Q4=0;
+                   if geom2_mesh_reduction_factor<1
+                       temp=reducepatch(geom2.faces,geom2.vertices,geom2_mesh_reduction_factor);
+                       geom2.faces_reduce=temp.faces;
+                       geom2.vertices_reduce=temp.vertices;
+                       geom2_reduce_type_Q4=0;
+                   else
+                       geom2.faces_reduce=geom2.faces;
+                       geom2.vertices_reduce=geom2.vertices;
+                       geom2_reduce_type_Q4=0;
+                   end
            else
                    % element is a quad
                    geom2_reduce_type_Q4=1;
