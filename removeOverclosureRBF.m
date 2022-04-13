@@ -1,4 +1,5 @@
-function [geom1_new,geom2_new]=removeOverclosureRBF(geom1,geom2,params)
+function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
+    removeOverclosureRBF(geom1,geom2,params)
     %% Define Gap Threshold
 
         % gap to achieve in final meshes in unit of mesh
@@ -91,19 +92,28 @@ function [geom1_new,geom2_new]=removeOverclosureRBF(geom1,geom2,params)
         else
                 % element is 2D
                 if size(geom1.faces,2)==3
+                    
+                        geom1_reduce_type_Q4=0;
                         % element is a tri
     %                     geom1_mesh_reduction_factor=750;
     %                     geom1_mesh_reduction_factor=2000;
+                        if counter==1
+                            try
+                                if smoothing_improve==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0 && relative_gap_weight~=1
+                                    geom1.vertices=improveTriMeshQuality(geom1.faces,geom1.vertices,2,2,.001);
+                                end
+                            catch
+                                disp('geom1 mesh improvement failed');
+                            end
+                        end
                        geom1_mesh_reduction_factor=scaleInputReductionFactor(geom1_mesh_reduction_factor,scale_percent_factor);
                        if  geom1_mesh_reduction_factor<1
                            temp=reducepatch(geom1.faces,geom1.vertices,geom1_mesh_reduction_factor);
                             geom1.faces_reduce=temp.faces;
                             geom1.vertices_reduce=temp.vertices;
-                            geom1_reduce_type_Q4=0;
                        else
                            geom1.faces_reduce=geom1.faces;
                             geom1.vertices_reduce=geom1.vertices;
-                            geom1_reduce_type_Q4=0;
                        end
                 else
                         % element is a quad
@@ -127,19 +137,28 @@ function [geom1_new,geom2_new]=removeOverclosureRBF(geom1,geom2,params)
        else
                % element is 2D
                if size(geom2.faces,2)==3
+                   
+                       geom2_reduce_type_Q4=0;
                         % element is a tri
     %                     geom2_mesh_reduction_factor=750;
     %                    geom2_mesh_reduction_factor=2000;
+                        if counter==1
+                            try
+                                if smoothing_improve==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0 && relative_gap_weight~=0
+                                    geom2.vertices=improveTriMeshQuality(geom2.faces,geom2.vertices,2,2,.001);
+                                end
+                            catch
+                                disp('geom2 mesh improvement failed');
+                            end
+                        end
                        geom2_mesh_reduction_factor=scaleInputReductionFactor(geom2_mesh_reduction_factor,scale_percent_factor);
                        if geom2_mesh_reduction_factor<1
                            temp=reducepatch(geom2.faces,geom2.vertices,geom2_mesh_reduction_factor);
                            geom2.faces_reduce=temp.faces;
                            geom2.vertices_reduce=temp.vertices;
-                           geom2_reduce_type_Q4=0;
                        else
                            geom2.faces_reduce=geom2.faces;
                            geom2.vertices_reduce=geom2.vertices;
-                           geom2_reduce_type_Q4=0;
                        end
                else
                        % element is a quad
@@ -168,14 +187,18 @@ function [geom1_new,geom2_new]=removeOverclosureRBF(geom1,geom2,params)
     %     hold on
     %     geom1_patch_reduce=patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
     %     
+    
+    %% Initial geometry smoothing
 
+    
+    
         %% determine initial overclosure distances
         if geom1_reduce_type_Q4==0
             % mesh geometry is tri
             tri_timer=tic();
             [geom1_surf_to_geom2_point_distance, geom1_surf_to_geom2_point_points] = point2trimesh('Faces',geom1.faces_reduce,...
                 'Vertices',geom1.vertices_reduce,'QueryPoints',geom2.vertices_rand,'Algorithm','parallel');
-            toc(tri_timer)
+%             toc(tri_timer)
         elseif geom1_reduce_type_Q4==1
             % mesh geometry is quad
             [geom1_surf_to_geom2_point_points,geom1_surf_to_geom2_point_distance]=...
@@ -188,7 +211,7 @@ function [geom1_new,geom2_new]=removeOverclosureRBF(geom1,geom2,params)
             [geom2_surf_to_geom1_point_distance, geom2_surf_to_geom1_point_points] = point2trimesh('Faces',geom2.faces_reduce,...
                 'Vertices',geom2.vertices_reduce,'QueryPoints',geom1.vertices_rand,'Algorithm','parallel');
 
-            toc(tri_timer)
+%             toc(tri_timer)
         elseif geom2_reduce_type_Q4==1
            % mesh geometry is quad
            [geom2_surf_to_geom1_point_points,geom2_surf_to_geom1_point_distance]=...
@@ -225,7 +248,19 @@ function [geom1_new,geom2_new]=removeOverclosureRBF(geom1,geom2,params)
             geom2_surf_to_geom1_vector(count_vertex,:)=-geom2_surf_to_geom1_point_distance_dir(count_vertex)*(geom2_surf_to_geom1_point_points(count_vertex,:)...
                 -geom1.vertices_rand(count_vertex,:))*multiplier;
         end
-
+        
+        
+        if counter==1
+            original_max_overclosure_1=min(geom2_surf_to_geom1_point_distance);
+            original_max_overclosure_2=min(geom1_surf_to_geom2_point_distance);
+            original_max_overclosure=min([original_max_overclosure_1,original_max_overclosure_2]);
+            if original_max_overclosure<-10
+                error('gap exceeds 10 mm calculation of over-clsoure');
+                disp('the over-closure measure is too large for the current model') 
+            end
+        end
+        
+        
         % deform vector is vector needed to deform nodes located from the
         % Surface to the ndoes wheres teh vector is defined. 
         geom_master_deform_vector=[geom1_surf_to_geom2_vector;-geom2_surf_to_geom1_vector];
@@ -293,13 +328,16 @@ function [geom1_new,geom2_new]=removeOverclosureRBF(geom1,geom2,params)
         end
         %% create Radial Basis Approximation
 
-        rbf_timer=tic();
+%         rbf_timer=tic();
 
 
 
-    geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
-            1E-6,smoothing,rbf_iterations);
-
+%     geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
+%             1E-6,smoothing,rbf_iterations);
+    smoothing=smoothing*.9;
+    geom_deform_vec_rbf=newgrnn(geom_master_positions',geom_master_deform_vector',smoothing);
+    
+    
     %     geom_deform_vec_rbf=newrbe(geom_master_positions',geom_master_deform_vector',1000);
 
 
@@ -379,41 +417,44 @@ function [geom1_new,geom2_new]=removeOverclosureRBF(geom1,geom2,params)
         total_error=min([geom2_error,geom1_error]);
         %% Save new stls
         counter=counter+1;
-        try
-            if mod(counter,10)==0 && smoothing_improve==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0
-                geom1.vertices=improveTriMeshQuality(geom1.faces,geom1.vertices,2,1,.001);
-            end
-        catch
-            disp('geom1 mesh improvement failed');
-        end
-
-
-        try
-            if mod(counter,10)==0 && smoothing_improve==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0
-                geom2.vertices=improveTriMeshQuality(geom2.faces,geom2.vertices,2,1,.001);
-            end
-        catch
-            disp('geom1 mesh improvement failed');
-        end
+%         try
+%             if mod(counter,10)==0 && smoothing_improve==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0 && relative_gap_weight~=1
+%                 geom1.vertices=improveTriMeshQuality(geom1.faces,geom1.vertices,2,1,.001);
+%             end
+%         catch
+%             disp('geom1 mesh improvement failed');
+%         end
+% 
+% 
+%         try
+%             if mod(counter,10)==0 && smoothing_improve==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0 && relative_gap_weight~=0
+%                 geom2.vertices=improveTriMeshQuality(geom2.faces,geom2.vertices,2,1,.001);
+%             end
+%         catch
+%             disp('geom1 mesh improvement failed');
+%         end
     end
 
 
-    try
-        if smoothing_improve==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0
-            geom1.vertices=improveTriMeshQuality(geom1.faces,geom1.vertices,2,2,.001);
-        end
-    catch
-        disp('geom1 mesh improvement failed');
-    end
-
-
-    try
-        if smoothing_improve==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0
-            geom2.vertices=improveTriMeshQuality(geom2.faces,geom2.vertices,2,2,.001);
-        end
-    catch
-        disp('geom1 mesh improvement failed');
-    end
+%     try
+%         if smoothing_improve==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0 && relative_gap_weight~=1
+%             geom1.vertices=improveTriMeshQuality(geom1.faces,geom1.vertices,2,2,.001);
+%         end
+%     catch
+%         disp('geom1 mesh improvement failed');
+%     end
+% 
+% 
+%     try
+%         if smoothing_improve==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0 && relative_gap_weight~=0
+%             geom2.vertices=improveTriMeshQuality(geom2.faces,geom2.vertices,2,2,.001);
+%         end
+%     catch
+%         disp('geom1 mesh improvement failed');
+%     end
     geom1_new=geom1;
     geom2_new=geom2;
+%     if counter>10
+%         error('max iterations exceeded');
+%     end
 end
