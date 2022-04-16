@@ -6,8 +6,8 @@ clc
 %% get list of stls
 
 %% original test path
-stl_folder='C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\visible human\overclosure corrected stls\STLs\Left\';
-
+stl_folder='C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\visible human\overclosure corrected stls\STLs\Left_v3\';
+result_folder=[stl_folder,'fixed_stls\'];
 
 stl_files=dir([stl_folder,'*.stl']);
 stl_file_names={stl_files.name};
@@ -88,7 +88,9 @@ end
 T = struct2table(overclosure_job_list);
 sortedT = sortrows(T, 'priority');
 overclosure_job_list = table2struct(sortedT);
-    
+
+
+save([result_folder,'job_list.mat'],'overclosure_job_list');
 %% overclosure parameters
         params.desired_gap=.05;
         params.relative_gap_weight=0.5;
@@ -103,10 +105,9 @@ overclosure_job_list = table2struct(sortedT);
         params.scale_percent_factor=1.3;
 
 %% Main over-closure adjustment loop
-result_folder=[stl_folder,'fixed_stls\'];
 w=waitbar(0,'Adjusting Over-closures');
-for count_pair=72:num_possible_over
-    tic
+for count_pair=105:num_possible_over
+    start_geom_tic=tic;
     geom1_name=overclosure_job_list(count_pair).geom1
     geom2_name=overclosure_job_list(count_pair).geom2
     if isfile([result_folder,geom1_name])
@@ -135,12 +136,12 @@ for count_pair=72:num_possible_over
         counter=1000;
         original_max_overclosure_1=1000;
         original_max_overclosure_2=1000;
-        original_max_overclosure_3=1000;
+        original_max_overclosure=1000;
     end
-    toc
+    total_time=toc(start_geom_tic);
     close all
     current_cells={geom1_name,geom2_name,counter,...
-        original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure};
+        original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure,total_time};
     
     stlwrite([result_folder,geom1_name],geom1_new);
     stlwrite([result_folder,geom2_name],geom2_new);

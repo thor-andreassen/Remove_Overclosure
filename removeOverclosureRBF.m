@@ -72,8 +72,12 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
 
     total_error=-Inf;
     max_iters=150;
+    conv_tol=.00001;
     counter=1;
-    while total_error < -.1 && counter<max_iters
+    geom1_error_total=[];
+    geom2_error_total=[];
+    end_flag=0;
+    while total_error < -.1 && counter<max_iters && end_flag==0
 
         %% Reduced Mesh
         rand_ratio=.75;
@@ -413,6 +417,30 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         %% Display Original Min Gap
         geom2_error=min(geom1_surf_to_geom2_point_distance);
         geom1_error=min(geom2_surf_to_geom1_point_distance);
+        geom1_error_total=[geom1_error_total,geom1_error];
+        geom2_error_total=[geom2_error_total,geom2_error];
+        
+        
+        if counter>20
+            if geom1_error_total(end)~=0
+                conv_1=abs((geom1_error_total(end)-geom1_error_total(end-1))/geom1_error_total(end));
+            else
+                conv_1=0;
+            end
+            if geom2_error_total(end)~=0
+                conv_2=abs((geom2_error_total(end)-geom2_error_total(end-1))/geom2_error_total(end));
+            else
+                conv_2=0;
+            end
+            
+            
+           max_conv=max([conv_1,conv_2]);
+           if max_conv<=conv_tol
+               end_flag=1;
+           else
+               end_flag=0;
+           end
+        end
         table(geom2_error,geom1_error)
         total_error=min([geom2_error,geom1_error]);
         %% Save new stls
