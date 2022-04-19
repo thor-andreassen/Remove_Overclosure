@@ -6,7 +6,7 @@ clc
 %% get list of stls
 
 %% original test path
-stl_folder='C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\visible human\overclosure corrected stls\STLs\Left_v5\';
+stl_folder='C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\visible human\overclosure corrected stls\STLs\Left_v7\';
 result_folder=[stl_folder,'fixed_stls\'];
 stl_files=dir([stl_folder,'*.stl']);
 stl_file_names={stl_files.name};
@@ -23,7 +23,7 @@ for counti=1:length(stl_file_names)
                 geom2=reducepatch(geom2_temp.faces,geom2_temp.vertices,1000);
                [ distances1 ] = point2trimesh('Faces',geom1.faces,...
                        'Vertices',geom1.vertices,'QueryPoints',geom2.vertices,'Algorithm','parallel');
-               [ distances2 ] = point2trimesh('Faces',geom2.faces,...
+               [ distances2 ] = point2trimesh('Faces',geom2.faces,...0
                        'Vertices',geom2.vertices,'QueryPoints',geom1.vertices,'Algorithm','parallel');
                min1=min(distances1);
                min2=min(distances2);
@@ -105,7 +105,7 @@ save([result_folder,'job_list.mat'],'overclosure_job_list');
 
 %% Main over-closure adjustment loop
 w=waitbar(0,'Adjusting Over-closures');
-for count_pair=1:num_possible_over
+for count_pair=94:num_possible_over
     start_geom_tic=tic;
     geom1_name=overclosure_job_list(count_pair).geom1
     geom2_name=overclosure_job_list(count_pair).geom2
@@ -128,7 +128,7 @@ for count_pair=1:num_possible_over
     
     try
         [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
-            removeOverclosureRBF(geom1,geom2,params);
+            removeOverclosureNODAL(geom1,geom2,params);
     catch
         geom1_new=geom1;
         geom2_new=geom2;
