@@ -14,6 +14,7 @@ stl_file_names={stl_files.name};
 %% create list of possible intersections
 threshold_dist=1;
 intersection_matrix=zeros(length(stl_file_names));
+distance_matrix=intersection_matrix;
 for counti=1:length(stl_file_names)
     counti
         [geom1_temp.faces,geom1_temp.vertices]=stlRead2([stl_folder,stl_file_names{counti}]);
@@ -28,6 +29,7 @@ for counti=1:length(stl_file_names)
                min1=min(distances1);
                min2=min(distances2);
                min_total=min([min1,min2]);
+               distance_matrix(counti,countj)=min_total;
                if min_total<= threshold_dist
                       intersection_matrix(counti,countj)=1;
                end
@@ -47,6 +49,7 @@ end
             if intersection_matrix(counti,countj)==1
                 geom_name_list(counter).geom1=stl_file_names{counti};
                 geom_name_list(counter).geom2=stl_file_names{countj};
+                geom_name_list(counter).initial_overclosure=distance_matrix(counti,countj);
                 counter=counter+1;
             end
         end
@@ -89,9 +92,10 @@ sortedT = sortrows(T, 'priority');
 overclosure_job_list = table2struct(sortedT);
 
 
-save([result_folder,'job_list.mat'],'overclosure_job_list');
+save([result_folder,'job_list.mat'],'overclosure_job_list','distance_matrix');
 %% overclosure parameters
         params.desired_gap=.05;
+        params.stop_tolerance=1E-5;
         params.relative_gap_weight=0.5;
         params.element_3d_type=[0,0];
         params.use_parallel_loops=1;

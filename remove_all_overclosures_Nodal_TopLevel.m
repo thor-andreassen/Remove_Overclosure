@@ -95,6 +95,7 @@ overclosure_job_list = table2struct(sortedT);
 save([result_folder,'job_list.mat'],'overclosure_job_list','distance_matrix');
 %% overclosure parameters
         params.desired_gap=.05;
+        params.stop_tolerance=1E-5;
         params.relative_gap_weight=0.5;
         params.element_3d_type=[0,0];
         params.use_parallel_loops=1;

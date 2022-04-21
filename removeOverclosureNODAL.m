@@ -18,7 +18,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     %     rbf_iterations=300;
         smoothing=params.smoothing;
         rbf_iterations=params.rbf_iterations;
-
+        stop_tolerance=abs(params.stop_tolerance);
 
         % reduction factor initial
         geom1_mesh_reduction_factor=params.geom1_mesh_reduction_factor;
@@ -77,7 +77,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     geom1_error_total=[];
     geom2_error_total=[];
     end_flag=0;
-    while total_error < -1E-5 && counter<max_iters && end_flag==0
+    while total_error < -stop_tolerance && counter<max_iters && end_flag==0
 
         %% Reduced Mesh
         rand_ratio=.75;
