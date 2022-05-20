@@ -270,7 +270,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             original_max_overclosure_1=min(geom2_surf_to_geom1_point_distance);
             original_max_overclosure_2=min(geom1_surf_to_geom2_point_distance);
             original_max_overclosure=min([original_max_overclosure_1,original_max_overclosure_2]);
-            if original_max_overclosure<-10
+            if original_max_overclosure<-15
                 error('gap exceeds 10 mm calculation of over-clsoure');
                 disp('the over-closure measure is too large for the current model') 
             end

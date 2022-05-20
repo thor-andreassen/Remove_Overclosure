@@ -12,6 +12,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
 
 
         smoothing_improve=params.smoothing_improve;
+        smoothing_reduction=params.smoothing_reduction;
         plot_surf=params.plot_surf;
         % good parameters for 2D and 3D
     %     smoothing=50;
@@ -351,12 +352,9 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
 
 %     geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
 %             1E-6,smoothing,rbf_iterations);
-    smoothing=smoothing*.9;
+    smoothing=smoothing*smoothing_reduction;
     geom_deform_vec_rbf=newgrnn(geom_master_positions',geom_master_deform_vector',smoothing);
-    
-    
-    %     geom_deform_vec_rbf=newrbe(geom_master_positions',geom_master_deform_vector',1000);
-
+%     
 
 
         %% Determine Original Deformations
@@ -456,6 +454,9 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         end
         table(geom2_error,geom1_error)
         total_error=min([geom2_error,geom1_error])
+        if total_error>=-.1
+            end_flag=1;
+        end
         %% Save new stls
         counter=counter+1;
 %         try

@@ -6,7 +6,7 @@ clc
 %% get list of stls
 
 %% original test path
-stl_folder='C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\visible human\overclosure corrected stls\STLs\Left_final_v4\';
+stl_folder='C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\visible human\overclosure corrected stls\VHM\STLs\Right_v7\';
 result_folder=[stl_folder,'fixed_stls\'];
 stl_files=dir([stl_folder,'*.stl']);
 stl_file_names={stl_files.name};
