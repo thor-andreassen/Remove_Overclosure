@@ -109,6 +109,7 @@ save([result_folder,'job_list.mat'],'overclosure_job_list','distance_matrix');
 
 %% Main over-closure adjustment loop
 w=waitbar(0,'Adjusting Over-closures');
+num_possible_over=numel(overclosure_job_list);
 for count_pair=1:num_possible_over
     start_geom_tic=tic;
     geom1_name=overclosure_job_list(count_pair).geom1
