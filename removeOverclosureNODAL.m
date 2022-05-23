@@ -18,7 +18,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     %     rbf_iterations=300;
         smoothing=params.smoothing;
         rbf_iterations=params.rbf_iterations;
-
+        stop_tolerance=abs(params.stop_tolerance);
 
         % reduction factor initial
         geom1_mesh_reduction_factor=params.geom1_mesh_reduction_factor;
@@ -77,7 +77,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     geom1_error_total=[];
     geom2_error_total=[];
     end_flag=0;
-    while total_error < -.1 && counter<max_iters && end_flag==0
+    while total_error < -stop_tolerance && counter<max_iters && end_flag==0
 
         %% Reduced Mesh
         rand_ratio=.75;
@@ -225,8 +225,11 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
 
         %% Determine Gaps
 
-        geom1_surf_to_geom2_point_distance_dir=sign(geom1_surf_to_geom2_point_distance);
+%         geom1_surf_to_geom2_point_distance_dir=sign(geom1_surf_to_geom2_point_distance);
+%         geom1_surf_to_geom2_point_distance=geom1_surf_to_geom2_point_distance-desired_gap;
+
         geom1_surf_to_geom2_point_distance=geom1_surf_to_geom2_point_distance-desired_gap;
+%         geom1_surf_to_geom2_point_distance_dir=sign(geom1_surf_to_geom2_point_distance);
         geom1_surf_to_geom2_vector=geom1_surf_to_geom2_point_points;
         for count_vertex=1:length(geom1_surf_to_geom2_point_distance)
             if geom1_surf_to_geom2_point_distance(count_vertex)>0
@@ -235,11 +238,16 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             else
                 multiplier=1;
             end
-            geom1_surf_to_geom2_vector(count_vertex,:)=-geom1_surf_to_geom2_point_distance_dir(count_vertex)*(geom1_surf_to_geom2_point_points(count_vertex,:)...
+            geom1_surf_to_geom2_vector(count_vertex,:)=(geom1_surf_to_geom2_point_points(count_vertex,:)...
                 -geom2.vertices_rand(count_vertex,:))*multiplier;
+            if norm(geom1_surf_to_geom2_vector(count_vertex,:))~=0
+                geom1_surf_to_geom2_vector(count_vertex,:)=(geom1_surf_to_geom2_vector(count_vertex,:)/...
+                    norm(geom1_surf_to_geom2_vector(count_vertex,:)))*norm(geom1_surf_to_geom2_point_distance(count_vertex));
+            end
         end
 
-        geom2_surf_to_geom1_point_distance_dir=sign(geom2_surf_to_geom1_point_distance);
+%         geom2_surf_to_geom1_point_distance_dir=sign(geom2_surf_to_geom1_point_distance);
+%         geom2_surf_to_geom1_point_distance=geom2_surf_to_geom1_point_distance-desired_gap;
         geom2_surf_to_geom1_point_distance=geom2_surf_to_geom1_point_distance-desired_gap;
         geom2_surf_to_geom1_vector=geom2_surf_to_geom1_point_points;
         for count_vertex=1:length(geom2_surf_to_geom1_point_distance)
@@ -249,8 +257,12 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             else
                 multiplier=1;
             end
-            geom2_surf_to_geom1_vector(count_vertex,:)=-geom2_surf_to_geom1_point_distance_dir(count_vertex)*(geom2_surf_to_geom1_point_points(count_vertex,:)...
+            geom2_surf_to_geom1_vector(count_vertex,:)=(geom2_surf_to_geom1_point_points(count_vertex,:)...
                 -geom1.vertices_rand(count_vertex,:))*multiplier;
+            if norm(geom2_surf_to_geom1_vector(count_vertex,:))~=0
+                geom2_surf_to_geom1_vector(count_vertex,:)=(geom2_surf_to_geom1_vector(count_vertex,:)/...
+                    norm(geom2_surf_to_geom1_vector(count_vertex,:)))*norm(geom2_surf_to_geom1_point_distance(count_vertex));
+            end
         end
         
         
@@ -258,7 +270,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             original_max_overclosure_1=min(geom2_surf_to_geom1_point_distance);
             original_max_overclosure_2=min(geom1_surf_to_geom2_point_distance);
             original_max_overclosure=min([original_max_overclosure_1,original_max_overclosure_2]);
-            if original_max_overclosure<-10
+            if original_max_overclosure<-15
                 error('gap exceeds 10 mm calculation of over-clsoure');
                 disp('the over-closure measure is too large for the current model') 
             end
@@ -401,7 +413,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
            end
         end
         table(geom2_error,geom1_error)
-        total_error=min([geom2_error,geom1_error]);
+        total_error=min([geom2_error,geom1_error])
         %% Save new stls
         counter=counter+1;
 %         try

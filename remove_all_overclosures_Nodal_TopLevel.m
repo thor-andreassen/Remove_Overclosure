@@ -6,7 +6,7 @@ clc
 %% get list of stls
 
 %% original test path
-stl_folder='C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\visible human\overclosure corrected stls\STLs\Left_v7\';
+stl_folder='C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\visible human\overclosure corrected stls\VHM\STLs\Right_v7\';
 result_folder=[stl_folder,'fixed_stls\'];
 stl_files=dir([stl_folder,'*.stl']);
 stl_file_names={stl_files.name};
@@ -14,6 +14,7 @@ stl_file_names={stl_files.name};
 %% create list of possible intersections
 threshold_dist=1;
 intersection_matrix=zeros(length(stl_file_names));
+distance_matrix=intersection_matrix;
 for counti=1:length(stl_file_names)
     counti
         [geom1_temp.faces,geom1_temp.vertices]=stlRead2([stl_folder,stl_file_names{counti}]);
@@ -23,11 +24,12 @@ for counti=1:length(stl_file_names)
                 geom2=reducepatch(geom2_temp.faces,geom2_temp.vertices,1000);
                [ distances1 ] = point2trimesh('Faces',geom1.faces,...
                        'Vertices',geom1.vertices,'QueryPoints',geom2.vertices,'Algorithm','parallel');
-               [ distances2 ] = point2trimesh('Faces',geom2.faces,...0
+               [ distances2 ] = point2trimesh('Faces',geom2.faces,...
                        'Vertices',geom2.vertices,'QueryPoints',geom1.vertices,'Algorithm','parallel');
                min1=min(distances1);
                min2=min(distances2);
                min_total=min([min1,min2]);
+               distance_matrix(counti,countj)=min_total;
                if min_total<= threshold_dist
                       intersection_matrix(counti,countj)=1;
                end
@@ -47,6 +49,7 @@ end
             if intersection_matrix(counti,countj)==1
                 geom_name_list(counter).geom1=stl_file_names{counti};
                 geom_name_list(counter).geom2=stl_file_names{countj};
+                geom_name_list(counter).initial_overclosure=distance_matrix(counti,countj);
                 counter=counter+1;
             end
         end
@@ -89,9 +92,10 @@ sortedT = sortrows(T, 'priority');
 overclosure_job_list = table2struct(sortedT);
 
 
-save([result_folder,'job_list.mat'],'overclosure_job_list');
+save([result_folder,'job_list.mat'],'overclosure_job_list','distance_matrix');
 %% overclosure parameters
         params.desired_gap=.05;
+        params.stop_tolerance=1E-5;
         params.relative_gap_weight=0.5;
         params.element_3d_type=[0,0];
         params.use_parallel_loops=1;
@@ -105,7 +109,8 @@ save([result_folder,'job_list.mat'],'overclosure_job_list');
 
 %% Main over-closure adjustment loop
 w=waitbar(0,'Adjusting Over-closures');
-for count_pair=94:num_possible_over
+num_possible_over=numel(overclosure_job_list);
+for count_pair=1:num_possible_over
     start_geom_tic=tic;
     geom1_name=overclosure_job_list(count_pair).geom1
     geom2_name=overclosure_job_list(count_pair).geom2
