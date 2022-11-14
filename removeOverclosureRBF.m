@@ -72,7 +72,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             % whether the elements inputted to each geometry are 3d or 2d respectively.
 
     total_error=-Inf;
-    max_iters=150;
+    max_iters=1500;
     conv_tol=.00001;
     counter=1;
     geom1_error_total=[];
@@ -316,9 +316,15 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
 
         %% Create arrow deformation plot
         if plot_surf==1
-            geom2_deform_reduce_fig=figure();
+            if counter==1
+                def_figure=figure();
+            else
+                figure(def_figure);
+                clf(def_figure);
+            end
+            subplot(1,2,1)
             plot3(geom2.vertices_rand(:,1),geom2.vertices_rand(:,2),...
-                geom2.vertices_rand(:,3),'ro')
+                geom2.vertices_rand(:,3),'r.')
             hold on
             if norm(geom1_surf_to_geom2_vector)>0
         %         arrow3(geom2.vertices_rand,geom1_surf_to_geom2_vector+geom2.vertices_rand)
@@ -330,9 +336,9 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
             axis equal
 
-            geom1_deform_reduce_fig=figure();
+            subplot(1,2,2)
             plot3(geom1.vertices_rand(:,1),geom1.vertices_rand(:,2),...
-                geom1.vertices_rand(:,3),'ro')
+                geom1.vertices_rand(:,3),'r.')
             hold on
             if norm(geom2_surf_to_geom1_vector)>0
         %         arrow3(geom1.vertices_rand,geom2_surf_to_geom1_vector+geom1.vertices_rand)
@@ -343,6 +349,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             end
             patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
             axis equal
+            pause(.001);
         end
         %% create Radial Basis Approximation
 
@@ -428,10 +435,21 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         %% Display Original Min Gap
         geom2_error=min(geom1_surf_to_geom2_point_distance);
         geom1_error=min(geom2_surf_to_geom1_point_distance);
+        geom1_error_mean=mean(geom2_surf_to_geom1_point_distance);
+        geom2_error_mean=mean(geom1_surf_to_geom2_point_distance);
+        geom1_error_median=median(geom2_surf_to_geom1_point_distance);
+        geom2_error_median=median(geom1_surf_to_geom2_point_distance);
         geom1_error_total=[geom1_error_total,geom1_error];
         geom2_error_total=[geom2_error_total,geom2_error];
+        geom_error_mean=log10(abs(min([geom1_error_mean,geom2_error_mean])));
         
-        
+        max_deform=log10(norm([geom1_deform_orig_vec;geom1_deform_orig_vec]));
+        max_adjustment_vec=vecnorm(geom_master_deform_vector,2,2);
+        current_num_overclosures = log10(length(nonzeros(max_adjustment_vec(max_adjustment_vec>0)))/length(max_adjustment_vec));
+        current_over=length(nonzeros(max_adjustment_vec(max_adjustment_vec>0)));
+
+
+
         if counter>20
             if geom1_error_total(end)~=0
                 conv_1=abs((geom1_error_total(end)-geom1_error_total(end-1))/geom1_error_total(end));
@@ -452,11 +470,53 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                end_flag=0;
            end
         end
-        table(geom2_error,geom1_error)
+        table(geom2_error,geom1_error,geom1_error_mean,geom2_error_mean,current_over)
         total_error=min([geom2_error,geom1_error])
-        if total_error>=-.1
+        if total_error>=-.001
             end_flag=1;
         end
+
+
+        if counter==1
+            conv_figure=figure();
+        else
+            figure(conv_figure);
+            clf(conv_figure);
+        end
+        subplot(2,2,1);
+        total_error_hist(counter)=log10(abs(total_error));
+        plot(total_error_hist);
+        xlabel('Iteration');
+        ylabel('Log MAX Overclosure');
+        title('Maximum Overclosure');
+
+        subplot(2,2,2);
+        mean_conv_hist(counter)=geom_error_mean;
+        plot(mean_conv_hist);
+        xlabel('Iteration');
+        ylabel('Log Mean Overclosure');
+        title('Mean Overclosure');
+
+        subplot(2,2,3);
+        max_deform_hist(counter)=max_deform;
+        plot(max_deform_hist);
+        xlabel('Iteration');
+        ylabel('Log Max Adjustment');
+        title('Max Adjustment');
+
+        subplot(2,2,4);
+        num_over(counter)=current_num_overclosures;
+        plot(num_over);
+        xlabel('Iteration');
+        ylabel('log Fraction of Overclosures');
+        title('Fraction of Overclosures');
+
+
+
+
+
+
+
         %% Save new stls
         counter=counter+1;
 %         try

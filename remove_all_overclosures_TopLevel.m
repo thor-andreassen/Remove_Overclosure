@@ -6,7 +6,7 @@ clc
 %% get list of stls
 
 %% original test path
-stl_folder='C:\Users\Thor.Andreassen\Desktop\Thor Personal Folder\Research\visible human\overclosure corrected stls\VHM\STLs\Right_v6\';
+stl_folder='C:\Users\DU_P620\Desktop\Thors_Personal_Folder\Example_Overclosure\';
 result_folder=[stl_folder,'fixed_stls\'];
 stl_files=dir([stl_folder,'*.stl']);
 stl_file_names={stl_files.name};
@@ -92,21 +92,36 @@ sortedT = sortrows(T, 'priority');
 overclosure_job_list = table2struct(sortedT);
 
 
-save([result_folder,'job_list.mat'],'overclosure_job_list','distance_matrix');
+% save([result_folder,'job_list.mat'],'overclosure_job_list','distance_matrix');
+load([result_folder,'job_list.mat'])
 %% overclosure parameters
 % % working parameters
+%         params.desired_gap=.05;
+%         params.stop_tolerance=1E-5;
+%         params.relative_gap_weight=0.5;
+%         params.element_3d_type=[0,0];
+%         params.use_parallel_loops=1;
+%         params.smoothing_improve=.1;
+%         params.plot_surf=0;
+%         params.smoothing=0.999;
+%         params.smoothing_reduction=0.9;
+%         params.rbf_iterations=400;
+%         params.geom1_mesh_reduction_factor=1;
+%         params.geom2_mesh_reduction_factor=1;
+%         params.scale_percent_factor=1.3;
+
         params.desired_gap=.05;
         params.stop_tolerance=1E-5;
         params.relative_gap_weight=0.5;
         params.element_3d_type=[0,0];
         params.use_parallel_loops=1;
         params.smoothing_improve=.1;
-        params.plot_surf=0;
+        params.plot_surf=1;
         params.smoothing=0.999;
         params.smoothing_reduction=0.9;
         params.rbf_iterations=400;
-        params.geom1_mesh_reduction_factor=1;
-        params.geom2_mesh_reduction_factor=1;
+        params.geom1_mesh_reduction_factor=0.25;
+        params.geom2_mesh_reduction_factor=0.25;
         params.scale_percent_factor=1.3;
         
 
@@ -147,7 +162,7 @@ for count_pair=1:num_possible_over
         original_max_overclosure=1000;
     end
     total_time=toc(start_geom_tic);
-    close all
+%     close all
     current_cells={geom1_name,geom2_name,counter,...
         original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure,total_time};
     
