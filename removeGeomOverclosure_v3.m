@@ -7,38 +7,38 @@ clc
 % [geom1.faces,geom1.vertices]=stlRead2('glut_max_test_5d0.stl');
 % geom1.vertices_orig=geom1.vertices;
 
-% [nodelist1,elemlist1,elemlist1_renum]=READ_MESH_NUMS_AJC('CART1-FEMUR-S192803L_2.inp');
+% [nodelist1,elemlist1,elemlist1_renum]=READ_MESH_NUMS_AJC('S193761_Left_Cartilage_Femur_Hex_Mesh.inp');
 % geom1.faces=elemlist1_renum(:,2:end);
 % geom1.vertices=nodelist1(:,2:end);
 % geom1.vertices_orig=nodelist1(:,2:end);
 % geom1.elemlist=elemlist1;
 % geom1.nodelist=nodelist1;
-
-% % [geom2.faces,geom2.vertices]=stlRead2('glut_med_test_5d0.stl');
-% % geom2.vertices_orig=geom2.vertices;
-
-% [nodelist2,elemlist2,elemlist_renum2]=READ_MESH_NUMS_AJC('BONE1-FEMUR-S192803L.inp');
+% 
+% % % [geom2.faces,geom2.vertices]=stlRead2('glut_med_test_5d0.stl');
+% % % geom2.vertices_orig=geom2.vertices;
+% 
+% [nodelist2,elemlist2,elemlist_renum2]=READ_MESH_NUMS_AJC('S193761_Left_Cartilage_Tibia_Lateral_Hex_Mesh.inp');
 % geom2.faces=elemlist_renum2(:,2:end);
 % geom2.vertices=nodelist2(:,2:end);
 % geom2.vertices_orig=nodelist2(:,2:end);
 % geom2.elemlist=elemlist2;
 % geom2.nodelist=nodelist2;
-% save('muscle_geom_orig.mat');
+% save('cart_geom_orig.mat');
 
-load('muscle_geom_orig.mat');
+load('cart_geom_orig.mat');
 %% Define Gap Threshold
     
     % gap to achieve in final meshes in unit of mesh
-    desired_gap=.02;
+    desired_gap=.01;
     %1 = fixed geom 1 moving geom 2.
     % 0 = moving geom 1, fixed geom 2.
-    relative_gap_weight=0;
-    element_3d_type=[1,0];
+    relative_gap_weight=0.5;
+    element_3d_type=[1,1];
     use_parallel_loops=1;
 
     
     smoothing_improve=0;
-    plot_surf=0;
+    plot_surf=1;
     % good parameters for 2D and 3D
 %     smoothing=50;
 %     rbf_iterations=300;
@@ -47,8 +47,8 @@ load('muscle_geom_orig.mat');
 
 
     % reduction factor initial
-    geom1_mesh_reduction_factor=1.0;
-    geom2_mesh_reduction_factor=1.0;
+    geom1_mesh_reduction_factor=.25;
+    geom2_mesh_reduction_factor=.25;
     scale_percent_factor=1.05;
     
     % good parameters for 2D and 2D
@@ -428,7 +428,7 @@ geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
     catch
         disp('geom1 mesh improvement failed');
     end
-    save('muscle_geom_orig.mat','geom2','geom1');
+    save('cart_geom_orig.mat','geom2','geom1');
 end
 
 
@@ -449,4 +449,4 @@ catch
     disp('geom1 mesh improvement failed');
 end
 
-save('muscle_geom_orig.mat','geom2','geom1');
+save('cart_geom_orig.mat','geom2','geom1');
