@@ -110,7 +110,7 @@ load([result_folder,'job_list.mat'])
 %         params.geom2_mesh_reduction_factor=1;
 %         params.scale_percent_factor=1.3;
 
-        params.desired_gap=.05;
+        params.desired_gap=.15;
         params.stop_tolerance=1E-5;
         params.relative_gap_weight=0.5;
         params.element_3d_type=[0,0];

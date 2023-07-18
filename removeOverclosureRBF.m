@@ -72,7 +72,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             % whether the elements inputted to each geometry are 3d or 2d respectively.
 
     total_error=-Inf;
-    max_iters=1500;
+    max_iters=500;
     conv_tol=.00001;
     counter=1;
     geom1_error_total=[];
@@ -88,7 +88,8 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                 [geom1.faces_reduce,geom1.vertices_reduce]=renumberFacesAndVertices(face_outer_surf,geom1.vertices);
                 temp_rand=randperm(size(geom1_inner_nodes,1));
                 temp_rand_val=temp_rand(1:ceil(size(geom1_inner_nodes,1)*rand_ratio));
-                geom1.vertices_rand=[geom1.vertices_reduce;geom1.vertices(temp_rand_val,:)];
+%                 geom1.vertices_rand=[geom1.vertices_reduce;geom1.vertices(temp_rand_val,:)];
+                geom1.vertices_rand=[geom1.vertices_reduce;geom1_inner_nodes(temp_rand_val,:)];
                 if size(geom1.faces_reduce,2)==4
                         geom1_reduce_type_Q4=1;
                 else
@@ -133,7 +134,8 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                 [geom2.faces_reduce,geom2.vertices_reduce]=renumberFacesAndVertices(face_outer_surf,geom2.vertices);
                 temp_rand=randperm(size(geom2_inner_nodes,1));
                 temp_rand_val=temp_rand(1:ceil(size(geom2_inner_nodes,1)*rand_ratio));
-                geom2.vertices_rand=[geom2.vertices_reduce;geom2.vertices(temp_rand_val,:)];
+%                 geom2.vertices_rand=[geom2.vertices_reduce;geom2.vertices(temp_rand_val,:)];
+                geom2.vertices_rand=[geom2.vertices_reduce;geom2_inner_nodes(temp_rand_val,:)];
                 if size(geom2.faces_reduce,2)==4
                         geom2_reduce_type_Q4=1;
                 else
@@ -208,7 +210,11 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             % mesh geometry is quad
             [geom1_surf_to_geom2_point_points,geom1_surf_to_geom2_point_distance]=...
                     getPointToQ4MeshApproximate(geom1.faces_reduce,geom1.vertices_reduce,geom2.vertices_rand,use_parallel_loops);
+        
         end
+
+
+
 
         if geom2_reduce_type_Q4==0
             % mesh geometry is tri
@@ -222,6 +228,41 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
            [geom2_surf_to_geom1_point_points,geom2_surf_to_geom1_point_distance]=...
                     getPointToQ4MeshApproximate(geom2.faces_reduce,geom2.vertices_reduce,geom1.vertices_rand,use_parallel_loops);
         end
+
+
+%         if counter==1
+%             norm_figure=figure();
+%         else
+%             figure(norm_figure);
+%             clf(norm_figure);
+%         end
+%         subplot(1,2,1)
+%         scatter3(geom1.vertices_rand(:,1),geom1.vertices_rand(:,2),geom1.vertices_rand(:,3),'ro')
+%         hold on
+%         scatter3(geom1_inner_nodes(:,1),geom1_inner_nodes(:,2),geom1_inner_nodes(:,3),'bx')
+%         quiver3(geom2.vertices_rand(:,1),...
+%             geom2.vertices_rand(:,2),...
+%             geom2.vertices_rand(:,3),...
+%             geom1_surf_to_geom2_point_points(:,1)...
+%                 -geom2.vertices_rand(:,1),...
+%             geom1_surf_to_geom2_point_points(:,2)...
+%                 -geom2.vertices_rand(:,2),...
+%             geom1_surf_to_geom2_point_points(:,3)...
+%                 -geom2.vertices_rand(:,3),...
+%             'k');
+%         subplot(1,2,2)
+%         quiver3(geom1.vertices_rand(:,1),...
+%             geom1.vertices_rand(:,2),...
+%             geom1.vertices_rand(:,3),...
+%             geom2_surf_to_geom1_point_points(:,1)...
+%                 -geom1.vertices_rand(:,1),...
+%             geom2_surf_to_geom1_point_points(:,2)...
+%                 -geom1.vertices_rand(:,2),...
+%             geom2_surf_to_geom1_point_points(:,3)...
+%                 -geom1.vertices_rand(:,3),...
+%             'k');
+
+
 
 
         %% Determine Gaps
@@ -343,9 +384,9 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             if norm(geom2_surf_to_geom1_vector)>0
         %         arrow3(geom1.vertices_rand,geom2_surf_to_geom1_vector+geom1.vertices_rand)
                 quiver3(geom1.vertices_rand(:,1),geom1.vertices_rand(:,2),geom1.vertices_rand(:,3),...
-                    -geom2_surf_to_geom1_vector(:,1).*geom2_surf_to_geom1_point_distance,...
-                    -geom2_surf_to_geom1_vector(:,2).*geom2_surf_to_geom1_point_distance,...
-                    -geom2_surf_to_geom1_vector(:,3).*geom2_surf_to_geom1_point_distance,'k');
+                    geom2_surf_to_geom1_vector(:,1).*geom2_surf_to_geom1_point_distance,...
+                    geom2_surf_to_geom1_vector(:,2).*geom2_surf_to_geom1_point_distance,...
+                    geom2_surf_to_geom1_vector(:,3).*geom2_surf_to_geom1_point_distance,'k');
             end
             patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
             axis equal
@@ -450,7 +491,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
 
 
 
-        if counter>20
+        if counter>150
             if geom1_error_total(end)~=0
                 conv_1=abs((geom1_error_total(end)-geom1_error_total(end-1))/geom1_error_total(end));
             else
