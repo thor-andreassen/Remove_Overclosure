@@ -9,7 +9,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         relative_gap_weight=params.relative_gap_weight;
         element_3d_type=params.element_3d_type;
         use_parallel_loops=params.use_parallel_loops;
-
+        scale_val=0.4;
 
         smoothing_improve=params.smoothing_improve;
         plot_surf=params.plot_surf;
@@ -80,14 +80,15 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     while total_error < -stop_tolerance && counter<max_iters && end_flag==0
 
         %% Reduced Mesh
-        rand_ratio=.75;
+        rand_ratio=1;
         if element_3d_type(1)
                 % element is 3D
                 [face_outer_surf,~,~,~,~,geom1_inner_nodes]=get3DElementOuterSurface(geom1.faces,geom1.vertices);
                 [geom1.faces_reduce,geom1.vertices_reduce]=renumberFacesAndVertices(face_outer_surf,geom1.vertices);
                 temp_rand=randperm(size(geom1_inner_nodes,1));
                 temp_rand_val=temp_rand(1:ceil(size(geom1_inner_nodes,1)*rand_ratio));
-                geom1.vertices_rand=[geom1.vertices_reduce;geom1.vertices(temp_rand_val,:)];
+%                 geom1.vertices_rand=[geom1.vertices_reduce;geom1.vertices(temp_rand_val,:)];
+                geom1.vertices_rand=[geom1.vertices];
                 if size(geom1.faces_reduce,2)==4
                         geom1_reduce_type_Q4=1;
                 else
@@ -132,7 +133,8 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                 [geom2.faces_reduce,geom2.vertices_reduce]=renumberFacesAndVertices(face_outer_surf,geom2.vertices);
                 temp_rand=randperm(size(geom2_inner_nodes,1));
                 temp_rand_val=temp_rand(1:ceil(size(geom2_inner_nodes,1)*rand_ratio));
-                geom2.vertices_rand=[geom2.vertices_reduce;geom2.vertices(temp_rand_val,:)];
+%                 geom2.vertices_rand=[geom2.vertices_reduce;geom2.vertices(temp_rand_val,:)];
+                geom2.vertices_rand=geom2.vertices;
                 if size(geom2.faces_reduce,2)==4
                         geom2_reduce_type_Q4=1;
                 else
@@ -242,7 +244,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                 -geom2.vertices_rand(count_vertex,:))*multiplier;
             if norm(geom1_surf_to_geom2_vector(count_vertex,:))~=0
                 geom1_surf_to_geom2_vector(count_vertex,:)=(geom1_surf_to_geom2_vector(count_vertex,:)/...
-                    norm(geom1_surf_to_geom2_vector(count_vertex,:)))*norm(geom1_surf_to_geom2_point_distance(count_vertex));
+                    norm(geom1_surf_to_geom2_vector(count_vertex,:)))*norm(geom1_surf_to_geom2_point_distance(count_vertex))*scale_val;
             end
         end
 
@@ -261,7 +263,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                 -geom1.vertices_rand(count_vertex,:))*multiplier;
             if norm(geom2_surf_to_geom1_vector(count_vertex,:))~=0
                 geom2_surf_to_geom1_vector(count_vertex,:)=(geom2_surf_to_geom1_vector(count_vertex,:)/...
-                    norm(geom2_surf_to_geom1_vector(count_vertex,:)))*norm(geom2_surf_to_geom1_point_distance(count_vertex));
+                    norm(geom2_surf_to_geom1_vector(count_vertex,:)))*norm(geom2_surf_to_geom1_point_distance(count_vertex))*scale_val;
             end
         end
         
@@ -285,7 +287,11 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
 
         %% Create arrow deformation plot
         if plot_surf==1
-            geom2_deform_reduce_fig=figure();
+            if counter==1
+                geom2_deform_reduce_fig=figure();
+            else
+                figure(geom2_deform_reduce_fig);
+            end
             plot3(geom2.vertices_rand(:,1),geom2.vertices_rand(:,2),...
                 geom2.vertices_rand(:,3),'ro')
             hold on
@@ -299,7 +305,11 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
             axis equal
 
-            geom1_deform_reduce_fig=figure();
+            if counter==1
+                geom1_deform_reduce_fig=figure();
+            else
+                figure(geom1_deform_reduce_fig);
+            end
             plot3(geom1.vertices_rand(:,1),geom1.vertices_rand(:,2),...
                 geom1.vertices_rand(:,3),'ro')
             hold on
@@ -414,6 +424,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         end
         table(geom2_error,geom1_error)
         total_error=min([geom2_error,geom1_error])
+        scale_val=scale_val*.99;
         %% Save new stls
         counter=counter+1;
 %         try
