@@ -25,7 +25,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         geom1_mesh_reduction_factor=params.geom1_mesh_reduction_factor;
         geom2_mesh_reduction_factor=params.geom2_mesh_reduction_factor;
         scale_percent_factor=params.scale_percent_factor;
-
+        weight_factor=params.weight_factor;
         % good parameters for 2D and 2D
     %         smoothing=1000;
     %         rbf_iterations=1000;
@@ -401,7 +401,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
 %     geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
 %             1E-6,smoothing,rbf_iterations);
     smoothing=smoothing*smoothing_reduction;
-    geom_deform_vec_rbf=newgrnn(geom_master_positions',geom_master_deform_vector',smoothing);
+    geom_deform_vec_rbf=newgrnn(geom_master_positions',geom_master_deform_vector'*weight_factor,smoothing);
 %     
 
 
@@ -411,12 +411,15 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                 geom2_deform_orig_vec=geom2_deform_orig_vec'*(relative_gap_weight);
                 geom1_deform_orig_vec=sim(geom_deform_vec_rbf,geom1.vertices','useParallel','yes');
                 geom1_deform_orig_vec=-geom1_deform_orig_vec'*(1-relative_gap_weight);
-
+                geom2_deform_orig_vec=geom2_deform_orig_vec/weight_factor;
+                geom1_deform_orig_vec=geom1_deform_orig_vec/weight_factor;
         else
                 geom2_deform_orig_vec=sim(geom_deform_vec_rbf,geom2.vertices');
                 geom2_deform_orig_vec=geom2_deform_orig_vec'*(relative_gap_weight);
                 geom1_deform_orig_vec=sim(geom_deform_vec_rbf,geom1.vertices');
                 geom1_deform_orig_vec=-geom1_deform_orig_vec'*(1-relative_gap_weight);
+                geom2_deform_orig_vec=geom2_deform_orig_vec/weight_factor;
+                geom1_deform_orig_vec=geom1_deform_orig_vec/weight_factor;
         end
         %% Plot original deformations
     %     geom2_deform_orig_fig=figure();
@@ -456,7 +459,21 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     %     plot3(geom2.vertices(:,1),geom2.vertices(:,2),...
     %         geom2.vertices(:,3),'ro');
     %     hold on
-        geom2.vertices=geom2.vertices+geom2_deform_orig_vec;
+    if counter==1
+        geom2_deform_orig_vec_old=zeros(size(geom2_deform_orig_vec));
+        geom1_deform_orig_vec_old=zeros(size(geom1_deform_orig_vec));
+        accelerated_weight=1;
+    end
+    
+    accelerated_weight=accelerated_weight*scale_percent_factor;
+    geom2_deform_orig_vec_accel=(geom2_deform_orig_vec_old)*accelerated_weight;
+    geom1_deform_orig_vec_accel=(geom1_deform_orig_vec_old)*accelerated_weight;
+    
+
+
+    geom2.vertices=geom2.vertices+geom2_deform_orig_vec+geom2_deform_orig_vec_accel;
+    geom2_deform_orig_vec_old=geom2_deform_orig_vec+geom2_deform_orig_vec_accel;
+%         geom2.vertices=geom2.vertices+geom2_deform_orig_vec;
     %     plot3(geom2.vertices(:,1),geom2.vertices(:,2),...
     %         geom2.vertices(:,3),'bo');
     %     if norm(geom1_surf_to_geom2_vector)>0
@@ -467,12 +484,16 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     %     plot3(geom1.vertices(:,1),geom1.vertices(:,2),...
     %         geom1.vertices(:,3),'ro');
     %     hold on
-        geom1.vertices=geom1.vertices+geom1_deform_orig_vec;
+
+    geom1.vertices=geom1.vertices+geom1_deform_orig_vec+geom1_deform_orig_vec_accel;
+    geom1_deform_orig_vec_old=geom1_deform_orig_vec+geom1_deform_orig_vec_accel;
+%         geom1.vertices=geom1.vertices+geom1_deform_orig_vec;
     %     plot3(geom1.vertices(:,1),geom1.vertices(:,2),...
     %         geom1.vertices(:,3),'bo');
     %     if norm(geom2_surf_to_geom1_vector)>0
     %         arrow3(geom1.vertices_reduce,geom2_surf_to_geom1_vector+geom1.vertices_reduce+.0001)
     %     end
+        weight_factor=weight_factor*scale_percent_factor;
         %% Display Original Min Gap
         geom2_error=min(geom1_surf_to_geom2_point_distance);
         geom1_error=min(geom2_surf_to_geom1_point_distance);

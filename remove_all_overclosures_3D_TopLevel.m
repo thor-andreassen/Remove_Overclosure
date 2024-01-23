@@ -22,18 +22,19 @@ stl_file_names={stl_files.name};
 % geom1.nodelist=nodelist1;
 % 
 % 
-% [nodelist2,elemlist2,elemlist_renum2]=READ_MESH_NUMS_AJC('S193761_Left_Cartilage_Tibia_Medial_Hex_Mesh.inp');
+% [nodelist2,elemlist2,elemlist_renum2]=READ_MESH_NUMS_AJC('S193761_Left_Cartilage_Tibia_Lateral_Hex_Mesh.inp');
 % geom2.faces=elemlist_renum2(:,2:end);
 % geom2.vertices=nodelist2(:,2:end);
 % geom2.vertices_orig=nodelist2(:,2:end);
 % geom2.elemlist=elemlist2;
 % geom2.nodelist=nodelist2;
-% 
+
 % intersection_matrix=zeros(length(stl_file_names));
 % distance_matrix=intersection_matrix;
 
 % save('cart_geom_orig.mat');
 load('cart_geom_orig.mat');
+% load('cart_geom_fixed_v1.mat');
 % load('cart_geom_fem_tib_lat.mat');
 %% overclosure parameters
 % % working parameters
@@ -51,32 +52,32 @@ load('cart_geom_orig.mat');
 %         params.geom2_mesh_reduction_factor=1;
 %         params.scale_percent_factor=1.3;
 
-        params.desired_gap=.15;
+        params.desired_gap=.1;
         params.stop_tolerance=1E-5;
         params.relative_gap_weight=0.5;
         params.element_3d_type=[1,1];
         params.use_parallel_loops=1;
-        params.smoothing_improve=10;
+        params.smoothing_improve=500;
         params.plot_surf=1;
-        params.smoothing=30;
+        params.smoothing=10;
 %         params.smoothing=1000;
-        params.smoothing_reduction=0.99999 ;
+        params.smoothing_reduction=0.99995 ;
 %         params.smoothing_reduction=0.99;
         params.rbf_iterations=4000;
-        params.geom1_mesh_reduction_factor=.05;
-        params.geom2_mesh_reduction_factor=.05;
-        params.scale_percent_factor=1.0001;
-        
+        params.geom1_mesh_reduction_factor=.001;
+        params.geom2_mesh_reduction_factor=.001;
+        params.scale_percent_factor=1.005;
+        params.weight_factor=100000;
 
 
 %% Main over-closure adjustment loop
 
     try
-%         [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
-%             removeOverclosureRBF(geom1,geom2,params);
-% 
         [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
-            removeOverclosureNODAL(geom1,geom2,params)
+            removeOverclosureRBF(geom1,geom2,params);
+% 
+%         [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
+%             removeOverclosureNODAL(geom1,geom2,params)
     catch
         geom1_new=geom1;
         geom2_new=geom2;
@@ -87,7 +88,7 @@ load('cart_geom_orig.mat');
     end
 geom1=geom1_new;
 geom2=geom2_new;
-save('cart_geom_orig.mat');
+save('cart_geom_fixed_v1.mat');
 
 
 
