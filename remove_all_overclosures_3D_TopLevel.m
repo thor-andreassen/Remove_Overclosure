@@ -64,7 +64,7 @@ load('cart_geom_orig.mat');
         params.rbf_iterations=4000;
         params.geom1_mesh_reduction_factor=.001;
         params.geom2_mesh_reduction_factor=.001;
-        params.scale_percent_factor=1.005;
+        params.scale_reduction_factor=1.005;
         params.weight_factor=100000;
 
 
