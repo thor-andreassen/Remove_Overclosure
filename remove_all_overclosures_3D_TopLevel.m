@@ -57,12 +57,10 @@ load('cart_geom_orig.mat');
         params.relative_gap_weight=0.5;
         params.element_3d_type=[1,1];
         params.use_parallel_loops=1;
-        params.smoothing_improve=500;
+        params.smooth_2D_surface=500;
         params.plot_surf=1;
         params.smoothing=10;
-%         params.smoothing=1000;
         params.smoothing_reduction=0.99995 ;
-%         params.smoothing_reduction=0.99;
         params.rbf_iterations=4000;
         params.geom1_mesh_reduction_factor=.001;
         params.geom2_mesh_reduction_factor=.001;
@@ -74,7 +72,7 @@ load('cart_geom_orig.mat');
 
     try
         [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
-            removeOverclosureRBF(geom1,geom2,params);
+            removeOverclosureGRNN(geom1,geom2,params);
 % 
 %         [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
 %             removeOverclosureNODAL(geom1,geom2,params)

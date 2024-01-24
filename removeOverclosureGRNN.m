@@ -1,44 +1,13 @@
 function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
-    removeOverclosureRBF(geom1,geom2,params)
-    %% Define Gap Threshold
-
-        % gap to achieve in final meshes in unit of mesh
-        desired_gap=params.desired_gap;
-        %1 = fixed geom 1 moving geom 2.
-        % 0 = moving geom 1, fixed geom 2.
-        relative_gap_weight=params.relative_gap_weight;
-        element_3d_type=params.element_3d_type;
-        use_parallel_loops=params.use_parallel_loops;
-
-
-        smoothing_improve=params.smoothing_improve;
-        smoothing_reduction=params.smoothing_reduction;
-        plot_surf=params.plot_surf;
-        % good parameters for 2D and 3D
-    %     smoothing=50;
-    %     rbf_iterations=300;
-        smoothing=params.smoothing;
-        rbf_iterations=params.rbf_iterations;
-        stop_tolerance=abs(params.stop_tolerance);
-
-        % reduction factor initial
-        geom1_mesh_reduction_factor=params.geom1_mesh_reduction_factor;
-        geom2_mesh_reduction_factor=params.geom2_mesh_reduction_factor;
-        scale_percent_factor=params.scale_percent_factor;
-        weight_factor=params.weight_factor;
-        % good parameters for 2D and 2D
-    %         smoothing=1000;
-    %         rbf_iterations=1000;
-    %         smoothing=1000;
-    %         rbf_iterations=400;
-    %% load initial geometries
-    %     load stls
-    %     [geom2.faces, geom2.vertices]=stlRead2('VHFL_Left_Bone_Femur.stl');
-    %     [geom1.faces, geom1.vertices]=stlRead2('VHFL_Muscle_VastusIntermedius.stl');
-    % 
-    %     save('muscle_geom_orig.mat');      
-
+    removeOverclosureGRNN(geom1,geom2,params)
     %% main
+    % Created by Thor E. Andreassen, PhD
+    % Last Edited 1/22/2024
+
+    % This code removes overclosures/overlap/penetration between two pairs
+    % of geometries. The code accepts as inputs meshes of 2D or 3D types,
+    % and triangular face geometry (tri or tetrahedral) and square face geometry
+    % (quad or hexahedral)
     % input to the function is two variables called geom1 and geom 2.
     %These are structures that have the folloiwng variables:
             % geom.faces: A connectivity list representing the set
@@ -68,9 +37,69 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                     % corresponding to the list of nodes in the elements. The values
                     % represent the location in cartesian x, y, z coordinate space.
 
-    % the other input is a binary array of [1 x 2] with a definitions of
-            % whether the elements inputted to each geometry are 3d or 2d respectively.
+            % the params input is a structure of configuration controls to define
+            % the method by which the overclosure adjustment occurs.
+                % params.use_parallel_loops (0 or 1)
+                    % A binary value used to determine if the algorithm
+                    % will use parallel computing for calculation of the
+                    % GRNN and the overclosure distances, or if only a
+                    % single core will be used. NOTE this functionality
+                    % requires the parallel computing toolbox.
+                    % 1 = use parallel computing
+                    % 0 = use single thread
+                % params.desired_gap (x>=0)
+                    % the size of the gap desired to be created between
+                    % meshes. The values is the size in the units of the
+                    % meshes that will be created as the Minimimum gap size
+                    % between all aspects of the meshes. 
+                % params.relative_gap_weight (0 <= x <= 1)
+                        % 1 = fixed geom 1 moving geom 2.
+                        % 0 = moving geom 1, fixed geom 2.
+                        % 0.5 = equal deformation
+                % params.element_3d_type ([1,0])
+                    % A binary array of two values containing flags for if
+                    % the geometry being input is of 2D or 3D type for geom
+                    % 1, and then geom 2, respectively.
+                % params.smooth_2D_surface (0 or 1)
+                    % A binary value that is only used if the element type
+                    % is a 2D triangular face element. When enabled this
+                    % allows smoothing of the mesh between iterations to
+                    % improve the final quality of the mesh.
+                    % 1 = enable smoothing
+                    % 0 = no smoothing
+                % params.smoothing (X > 0)
+                    % This is the value that controls the amount of
+                    % smoothing applied to the GRNN to allow for smooth
+                    % contours of the overclosure adjustment. A greater
+                    % number applies a larger smoothing and will usually
+                    % require more iterations to complete (Useful for large
+                    % initial overclosures). A smaller value will apply
+                    % less smoothing (useful for small and disconnected
+                    % overclosures)
+                % params.smoothing_reduction (0 <= x <= 1)
+                    % If smoothing is enable this value will control the
+                    % percent of sm
 
+    %% Define Gap Threshold
+
+        % gap to achieve in final meshes in unit of mesh
+        desired_gap=params.desired_gap;
+        relative_gap_weight=params.relative_gap_weight;
+        element_3d_type=params.element_3d_type;
+        use_parallel_loops=params.use_parallel_loops;
+        smooth_2D_surface=params.smooth_2D_surface;
+
+
+        smoothing_reduction=params.smoothing_reduction;
+        plot_surf=params.plot_surf;
+        smoothing=params.smoothing;
+        stop_tolerance=abs(params.stop_tolerance);
+
+        % reduction factor initial
+        geom1_mesh_reduction_factor=params.geom1_mesh_reduction_factor;
+        geom2_mesh_reduction_factor=params.geom2_mesh_reduction_factor;
+        scale_percent_factor=params.scale_percent_factor;
+        weight_factor=params.weight_factor;
     total_error=-Inf;
     max_iters=500;
     conv_tol=.00001;
@@ -100,12 +129,9 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                 if size(geom1.faces,2)==3
                     
                         geom1_reduce_type_Q4=0;
-                        % element is a tri
-    %                     geom1_mesh_reduction_factor=750;
-    %                     geom1_mesh_reduction_factor=2000;
                         if counter==1
                             try
-                                if smoothing_improve==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0 && relative_gap_weight~=1
+                                if smooth_2D_surface==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0 && relative_gap_weight~=1
                                     geom1.vertices=improveTriMeshQuality(geom1.faces,geom1.vertices,2,2,.001);
                                 end
                             catch
@@ -144,14 +170,10 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
        else
                % element is 2D
                if size(geom2.faces,2)==3
-                   
                        geom2_reduce_type_Q4=0;
-                        % element is a tri
-    %                     geom2_mesh_reduction_factor=750;
-    %                    geom2_mesh_reduction_factor=2000;
                         if counter==1
                             try
-                                if smoothing_improve==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0 && relative_gap_weight~=0
+                                if smooth_2D_surface==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0 && relative_gap_weight~=0
                                     geom2.vertices=improveTriMeshQuality(geom2.faces,geom2.vertices,2,2,.001);
                                 end
                             catch
@@ -175,30 +197,6 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
        end
 
 
-        %% initial plots
-    %     geom2_fig=figure()
-    %     geom2_patch_orig=patch('Faces',geom2.faces,'Vertices',geom2.vertices,'FaceColor','r','FaceAlpha',.5)
-    %     hold on
-    %     geom2_patch_reduce=patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    %     
-    %     geom1_fig=figure()
-    %     geom1_patch_orig=patch('Faces',geom1.faces,'Vertices',geom1.vertices,'FaceColor','r','FaceAlpha',.5)
-    %     hold on
-    %     geom1_patch_reduce=patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    %     
-    %     both_geom_fig=figure()
-    %     geom2_patch_orig=patch('Faces',geom2.faces,'Vertices',geom2.vertices,'FaceColor','r','FaceAlpha',.5)
-    %     hold on
-    %     geom2_patch_reduce=patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    %     geom1_patch_orig=patch('Faces',geom1.faces,'Vertices',geom1.vertices,'FaceColor','r','FaceAlpha',.5)
-    %     hold on
-    %     geom1_patch_reduce=patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    %     
-    
-    %% Initial geometry smoothing
-
-    
-    
         %% determine initial overclosure distances
         if geom1_reduce_type_Q4==0
             % mesh geometry is tri
