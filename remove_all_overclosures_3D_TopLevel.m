@@ -14,7 +14,7 @@ stl_file_names={stl_files.name};
 %% create list of possible intersections
 %% load geoms
 % 
-% [nodelist1,elemlist1,elemlist1_renum]=READ_MESH_NUMS_AJC('S193761_Left_Cartilage_Femur_Hex_Mesh_no_over_v1.inp');
+% [nodelist1,elemlist1,elemlist1_renum]=READ_MESH_NUMS_AJC('S193761_Left_Cartilage_Femur_Hex_Mesh.inp');
 % geom1.faces=elemlist1_renum(:,2:end);
 % geom1.vertices=nodelist1(:,2:end);
 % geom1.vertices_orig=nodelist1(:,2:end);
@@ -65,13 +65,13 @@ load('cart_geom_orig.mat');
         params.geom1_mesh_reduction_factor=.001;
         params.geom2_mesh_reduction_factor=.001;
         params.scale_reduction_factor=1.005;
-        params.weight_factor=100000;
-
+        params.weight_factor=100;
+        params.check_original=1;
 
 %% Main over-closure adjustment loop
 
     try
-        [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
+        [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure,history_params]=...
             removeOverclosureGRNN(geom1,geom2,params);
 % 
 %         [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
@@ -86,29 +86,29 @@ load('cart_geom_orig.mat');
     end
 geom1=geom1_new;
 geom2=geom2_new;
-save('cart_geom_fixed_v1.mat');
+% save('cart_geom_fixed_NODAL.mat');
 
 
 
 
 %% output data
 
-params.elem_type='C3D8';
-params.nset_name='NODES_TIBIA_MED';
-params.elset_name='ELEMENTS_TIBIA_MED';
-
-nodes1=geom2.nodelist;
-nodes1(:,2:end)=geom2.vertices;
-elements1=geom2.elemlist;
-
-writeAbaqusInput('S193761_Left_Cartilage_Tibia_Medial_Hex_Mesh_no_over.inp',nodes1,elements1,params);
-
-params.elem_type='C3D8';
-params.nset_name='NODES_FEMUR';
-params.elset_name='ELEMENTS_FEMUR';
+params.elem_type='C3D8R';
+params.nset_name='FEMUR_CART_NODES';
+params.elset_name='FEMUR_CART_ELEMS';
 
 nodes1=geom1.nodelist;
 nodes1(:,2:end)=geom1.vertices;
 elements1=geom1.elemlist;
 
-writeAbaqusInput('S193761_Left_Cartilage_Femur_Hex_Mesh_no_over.inp',nodes1,elements1,params);
+% writeAbaqusInput('S193761_Left_Cartilage_Femur_Hex_Mesh_no_over_validation_nodal.inp',nodes1,elements1,params);
+
+params.elem_type='C3D8R';
+params.nset_name='TIBIA_CART_LAT_NODES';
+params.elset_name='TIBIA_CART_LAT_ELEMS';
+
+nodes1=geom2.nodelist;
+nodes1(:,2:end)=geom2.vertices;
+elements1=geom2.elemlist;
+
+% writeAbaqusInput('S193761_Left_Cartilage_Tibia_Lateral_Hex_Mesh_no_over_validation_nodal.inp',nodes1,elements1,params);

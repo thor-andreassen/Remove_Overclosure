@@ -29,7 +29,7 @@ function writeAbaqusInput(file_name,nodes,elements,params)
             if count_col<size(elements,2)
                 fprintf(fid,'%d, ',elements(count_row,count_col));
             else
-                fprintf(fid,'%d\r\n ',elements(count_row,count_col));
+                fprintf(fid,'%d\r\n',elements(count_row,count_col));
             end
         end
     end

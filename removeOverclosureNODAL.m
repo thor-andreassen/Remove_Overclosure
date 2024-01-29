@@ -173,31 +173,8 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                geom2.vertices_rand=geom2.vertices_reduce;
        end
 
-
-        %% initial plots
-    %     geom2_fig=figure()
-    %     geom2_patch_orig=patch('Faces',geom2.faces,'Vertices',geom2.vertices,'FaceColor','r','FaceAlpha',.5)
-    %     hold on
-    %     geom2_patch_reduce=patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    %     
-    %     geom1_fig=figure()
-    %     geom1_patch_orig=patch('Faces',geom1.faces,'Vertices',geom1.vertices,'FaceColor','r','FaceAlpha',.5)
-    %     hold on
-    %     geom1_patch_reduce=patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    %     
-    %     both_geom_fig=figure()
-    %     geom2_patch_orig=patch('Faces',geom2.faces,'Vertices',geom2.vertices,'FaceColor','r','FaceAlpha',.5)
-    %     hold on
-    %     geom2_patch_reduce=patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    %     geom1_patch_orig=patch('Faces',geom1.faces,'Vertices',geom1.vertices,'FaceColor','r','FaceAlpha',.5)
-    %     hold on
-    %     geom1_patch_reduce=patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    %     
-    
     %% Initial geometry smoothing
 
-    
-    
         %% determine initial overclosure distances
         if geom1_reduce_type_Q4==0
             % mesh geometry is tri
@@ -227,11 +204,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
 
         %% Determine Gaps
 
-%         geom1_surf_to_geom2_point_distance_dir=sign(geom1_surf_to_geom2_point_distance);
-%         geom1_surf_to_geom2_point_distance=geom1_surf_to_geom2_point_distance-desired_gap;
-
         geom1_surf_to_geom2_point_distance=geom1_surf_to_geom2_point_distance-desired_gap;
-%         geom1_surf_to_geom2_point_distance_dir=sign(geom1_surf_to_geom2_point_distance);
         geom1_surf_to_geom2_vector=geom1_surf_to_geom2_point_points;
         for count_vertex=1:length(geom1_surf_to_geom2_point_distance)
             if geom1_surf_to_geom2_point_distance(count_vertex)>0
@@ -248,8 +221,6 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             end
         end
 
-%         geom2_surf_to_geom1_point_distance_dir=sign(geom2_surf_to_geom1_point_distance);
-%         geom2_surf_to_geom1_point_distance=geom2_surf_to_geom1_point_distance-desired_gap;
         geom2_surf_to_geom1_point_distance=geom2_surf_to_geom1_point_distance-desired_gap;
         geom2_surf_to_geom1_vector=geom2_surf_to_geom1_point_points;
         for count_vertex=1:length(geom2_surf_to_geom1_point_distance)
@@ -323,78 +294,11 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
             axis equal
         end
-        %% create Radial Basis Approximation
-
-%         rbf_timer=tic();
-
-
-
-%     geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
-%             1E-6,smoothing,rbf_iterations);
-%     smoothing=smoothing*.9;
-%     geom_deform_vec_rbf=newgrnn(geom_master_positions',geom_master_deform_vector',smoothing);
-    
-    
-    %     geom_deform_vec_rbf=newrbe(geom_master_positions',geom_master_deform_vector',1000);
-
-
-
-
-        %% Plot original deformations
-    %     geom2_deform_orig_fig=figure();
-    %     for count_face=1:size(geom2.faces,1)
-    %         nodel=geom2.faces(count_face,:);
-    %         temp_vec=geom2_deform_orig_vec(nodel,:);
-    %         temp_vec_mag=zeros(3,1);
-    %         for count_vec=1:3
-    %             temp_vec_mag(count_vec)=norm(temp_vec(count_vec,:));
-    %         end
-    %         patch(geom2.vertices(nodel,1),geom2.vertices(nodel,2),...
-    %             geom2.vertices(nodel,3),temp_vec_mag);
-    %         hold on
-    %     end
-    %     colorbar
-    %     colormap jet
-    %     
-    %     
-    %     geom1_deform_orig_fig=figure();
-    %     for count_face=1:size(geom1.faces,1)
-    %         nodel=geom1.faces(count_face,:);
-    %         temp_vec=geom1_deform_orig_vec(nodel,:);
-    %         temp_vec_mag=zeros(3,1);
-    %         for count_vec=1:3
-    %             temp_vec_mag(count_vec)=norm(temp_vec(count_vec,:));
-    %         end
-    %         patch(geom1.vertices(nodel,1),geom1.vertices(nodel,2),...
-    %             geom1.vertices(nodel,3),temp_vec_mag);
-    %         hold on
-    %     end
-    %     colorbar
-    %     colormap jet
 
 
         %% Apply deformations
-    %     deforgeom22_fig=figure()
-    %     plot3(geom2.vertices(:,1),geom2.vertices(:,2),...
-    %         geom2.vertices(:,3),'ro');
-    %     hold on
         geom2.vertices=geom2.vertices+geom1_surf_to_geom2_vector;
-    %     plot3(geom2.vertices(:,1),geom2.vertices(:,2),...
-    %         geom2.vertices(:,3),'bo');
-    %     if norm(geom1_surf_to_geom2_vector)>0
-    %         arrow3(geom2.vertices_reduce,geom1_surf_to_geom2_vector+geom2.vertices_reduce)
-    %     end
-    % 
-    %     deforgeom21_fig=figure()
-    %     plot3(geom1.vertices(:,1),geom1.vertices(:,2),...
-    %         geom1.vertices(:,3),'ro');
-    %     hold on
         geom1.vertices=geom1.vertices+geom2_surf_to_geom1_vector;
-    %     plot3(geom1.vertices(:,1),geom1.vertices(:,2),...
-    %         geom1.vertices(:,3),'bo');
-    %     if norm(geom2_surf_to_geom1_vector)>0
-    %         arrow3(geom1.vertices_reduce,geom2_surf_to_geom1_vector+geom1.vertices_reduce+.0001)
-    %     end
         %% Display Original Min Gap
         geom2_error=min(geom1_surf_to_geom2_point_distance);
         geom1_error=min(geom2_surf_to_geom1_point_distance);

@@ -1,4 +1,4 @@
-function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
+function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure,history_params]=...
     removeOverclosureGRNN(geom1,geom2,params)
     %% main
     % Created by Thor E. Andreassen, PhD
@@ -126,6 +126,12 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                     % reduction factor ratio to ensure that the algorithm
                     % removes the overclosure from the original dense mesh,
                     % not only the reduced meshes.
+                % params.weight_factor (x >= 1) - Default = 10
+                    % This parameter controls the amount to scale up the
+                    % overclosures by. This will not make the adjustment
+                    % larger, as it will undo the scaling amount, it will
+                    % simply increase the effect of the overclosures in the
+                    % smoothing operation.
 
     %% Define Gap Threshold
 
@@ -142,6 +148,8 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     params=setDefaultParamValue(params,'geom1_mesh_reduction_factor',0.01);
     params=setDefaultParamValue(params,'geom2_mesh_reduction_factor',0.01);
     params=setDefaultParamValue(params,'scale_reduction_factor',1.005);
+    params=setDefaultParamValue(params,'weight_factor',10.0);
+    params=setDefaultParamValue(params,'check_original',1);
 
     % gap to achieve in final meshes in unit of mesh
     desired_gap=params.desired_gap;
@@ -156,7 +164,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     geom1_mesh_reduction_factor=params.geom1_mesh_reduction_factor;
     geom2_mesh_reduction_factor=params.geom2_mesh_reduction_factor;
     scale_reduction_factor=params.scale_reduction_factor;
-
+    check_original=params.check_original;
 
     weight_factor=params.weight_factor;
 
@@ -168,7 +176,25 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     counter=1;
     geom1_error_total=[];
     geom2_error_total=[];
+    over_total=[];
+    full_geom1_num_over=[];
+    full_geom2_num_over=[];
+    full_geom1_max_over=[];
+    full_geom2_max_over=[];
+    
+    if check_original==1
+        [full_mesh_params]=calculateFullOverclosure(geom1,geom2,use_parallel_loops,element_3d_type,desired_gap);
+        full_geom1_num_over=[full_geom1_num_over,full_mesh_params.geom1_num_over];
+        full_geom2_num_over=[full_geom2_num_over,full_mesh_params.geom2_num_over];
+        full_geom1_max_over=[full_geom1_max_over,full_mesh_params.geom1_max_over];
+        full_geom2_max_over=[full_geom2_max_over,full_mesh_params.geom2_max_over];
+    end
+
+
+
     end_flag=0;
+    overall_tic=tic();
+    overall_time=[];
     while total_error < -stop_tolerance && counter<max_iters && end_flag==0
 
         %% Reduced Mesh
@@ -429,9 +455,11 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         max_adjustment_vec=vecnorm(geom_master_deform_vector,2,2);
         current_num_overclosures = log10(length(nonzeros(max_adjustment_vec(max_adjustment_vec>0)))/length(max_adjustment_vec));
         current_over=length(nonzeros(max_adjustment_vec(max_adjustment_vec>0)));
+        over_total=[over_total,current_over];
 
-
-
+        history_params.geom1_error_total=geom1_error_total;
+        history_params.geom2_error_total=geom2_error_total;
+        history_params.over_total=over_total;
         if counter>150
             if geom1_error_total(end)~=0
                 conv_1=abs((geom1_error_total(end)-geom1_error_total(end-1))/geom1_error_total(end));
@@ -493,10 +521,12 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         ylabel('log Fraction of Overclosures');
         title('Fraction of Overclosures');
 
-
-
-
-
+        history_params.total_error_hist=10.^total_error_hist;
+        history_params.mean_conv_hist=10.^mean_conv_hist;
+        history_params.max_deform_hist=10.^max_deform_hist;
+        history_params.num_over=num_over;
+        overall_time=[overall_time,toc(overall_tic)];
+        history_params.overall_time=overall_time;
 
 
         %% Save new stls
@@ -517,6 +547,19 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         %         catch
         %             disp('geom1 mesh improvement failed');
         %         end
+
+        if check_original==1
+            [full_mesh_params]=calculateFullOverclosure(geom1,geom2,use_parallel_loops,element_3d_type,desired_gap);
+            full_geom1_num_over=[full_geom1_num_over,full_mesh_params.geom1_num_over];
+            full_geom2_num_over=[full_geom2_num_over,full_mesh_params.geom2_num_over];
+            full_geom1_max_over=[full_geom1_max_over,full_mesh_params.geom1_max_over];
+            full_geom2_max_over=[full_geom2_max_over,full_mesh_params.geom2_max_over];
+            history_params.full_geom1_num_over=full_geom1_num_over;
+            history_params.full_geom2_num_over=full_geom2_num_over;
+            history_params.full_geom1_max_over=full_geom1_max_over;
+            history_params.full_geom2_max_over=full_geom2_max_over;
+        end
+        history_params.overall_time=overall_time;
     end
 
 
