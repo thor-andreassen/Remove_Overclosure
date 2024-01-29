@@ -73,9 +73,9 @@ load('cart_geom_orig.mat');
     try
         [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure,history_params]=...
             removeOverclosureGRNN(geom1,geom2,params);
-% 
-%         [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
-%             removeOverclosureNODAL(geom1,geom2,params)
+
+% %         [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure,history_params]=...
+% %             removeOverclosureNODAL(geom1,geom2,params)
     catch
         geom1_new=geom1;
         geom2_new=geom2;
@@ -86,7 +86,7 @@ load('cart_geom_orig.mat');
     end
 geom1=geom1_new;
 geom2=geom2_new;
-% save('cart_geom_fixed_NODAL.mat');
+save('cart_geom_fixed_GRNN.mat');
 
 
 
@@ -101,7 +101,7 @@ nodes1=geom1.nodelist;
 nodes1(:,2:end)=geom1.vertices;
 elements1=geom1.elemlist;
 
-% writeAbaqusInput('S193761_Left_Cartilage_Femur_Hex_Mesh_no_over_validation_nodal.inp',nodes1,elements1,params);
+writeAbaqusInput('S193761_Left_Cartilage_Femur_Hex_Mesh_no_over_validation_GRNN.inp',nodes1,elements1,params);
 
 params.elem_type='C3D8R';
 params.nset_name='TIBIA_CART_LAT_NODES';
@@ -111,4 +111,4 @@ nodes1=geom2.nodelist;
 nodes1(:,2:end)=geom2.vertices;
 elements1=geom2.elemlist;
 
-% writeAbaqusInput('S193761_Left_Cartilage_Tibia_Lateral_Hex_Mesh_no_over_validation_nodal.inp',nodes1,elements1,params);
+writeAbaqusInput('S193761_Left_Cartilage_Tibia_Lateral_Hex_Mesh_no_over_validation_GRNN.inp',nodes1,elements1,params);
