@@ -1,41 +1,38 @@
-function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure]=...
+function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_overclosure_2,original_max_overclosure,history_params]=...
     removeOverclosureNODAL(geom1,geom2,params)
     %% Define Gap Threshold
 
-        % gap to achieve in final meshes in unit of mesh
-        desired_gap=params.desired_gap;
-        %1 = fixed geom 1 moving geom 2.
-        % 0 = moving geom 1, fixed geom 2.
-        relative_gap_weight=params.relative_gap_weight;
-        element_3d_type=params.element_3d_type;
-        use_parallel_loops=params.use_parallel_loops;
-        scale_val=0.4;
+    
 
-        smoothing_improve=params.smoothing_improve;
-        plot_surf=params.plot_surf;
-        % good parameters for 2D and 3D
-    %     smoothing=50;
-    %     rbf_iterations=300;
-        smoothing=params.smoothing;
-        rbf_iterations=params.rbf_iterations;
-        stop_tolerance=abs(params.stop_tolerance);
+    % check values and set defaults
+    params=setDefaultParamValue(params,'use_parallel_loops',0);
+    params=setDefaultParamValue(params,'relative_gap_weight',0.5);
+    params=setDefaultParamValue(params,'smooth_2D_surface',0);
+    params=setDefaultParamValue(params,'smoothing',10);
+    params=setDefaultParamValue(params,'smoothing_reduction',0.995);
+    params=setDefaultParamValue(params,'plot_surf',1);
+    params=setDefaultParamValue(params,'stop_tolerance',1E-5);
+    params=setDefaultParamValue(params,'geom1_mesh_reduction_factor',0.01);
+    params=setDefaultParamValue(params,'geom2_mesh_reduction_factor',0.01);
+    params=setDefaultParamValue(params,'scale_reduction_factor',1.005);
+    params=setDefaultParamValue(params,'weight_factor',10.0);
+    params=setDefaultParamValue(params,'check_original',1);
+
+    % gap to achieve in final meshes in unit of mesh
+    desired_gap=params.desired_gap;
+    relative_gap_weight=params.relative_gap_weight;
+    element_3d_type=params.element_3d_type;
+    use_parallel_loops=params.use_parallel_loops;
+    plot_surf=params.plot_surf;
+    stop_tolerance=abs(params.stop_tolerance);
+    check_original=params.check_original;
+
 
         % reduction factor initial
         geom1_mesh_reduction_factor=params.geom1_mesh_reduction_factor;
         geom2_mesh_reduction_factor=params.geom2_mesh_reduction_factor;
-        scale_percent_factor=params.scale_percent_factor;
+        scale_percent_factor=params.scale_reduction_factor;
 
-        % good parameters for 2D and 2D
-    %         smoothing=1000;
-    %         rbf_iterations=1000;
-    %         smoothing=1000;
-    %         rbf_iterations=400;
-    %% load initial geometries
-    %     load stls
-    %     [geom2.faces, geom2.vertices]=stlRead2('VHFL_Left_Bone_Femur.stl');
-    %     [geom1.faces, geom1.vertices]=stlRead2('VHFL_Muscle_VastusIntermedius.stl');
-    % 
-    %     save('muscle_geom_orig.mat');      
 
     %% main
     % input to the function is two variables called geom1 and geom 2.
@@ -77,6 +74,28 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     geom1_error_total=[];
     geom2_error_total=[];
     end_flag=0;
+
+
+    full_geom1_num_over=[];
+    full_geom2_num_over=[];
+    full_geom1_max_over=[];
+    full_geom2_max_over=[];
+    over_total=[];
+    if check_original==1
+        [full_mesh_params]=calculateFullOverclosure(geom1,geom2,use_parallel_loops,element_3d_type,desired_gap);
+        full_geom1_num_over=[full_geom1_num_over,full_mesh_params.geom1_num_over];
+        full_geom2_num_over=[full_geom2_num_over,full_mesh_params.geom2_num_over];
+        full_geom1_max_over=[full_geom1_max_over,full_mesh_params.geom1_max_over];
+        full_geom2_max_over=[full_geom2_max_over,full_mesh_params.geom2_max_over];
+    end
+
+
+
+    end_flag=0;
+    overall_tic=tic();
+    overall_time=[];
+
+
     while total_error < -stop_tolerance && counter<max_iters && end_flag==0
 
         %% Reduced Mesh
@@ -173,31 +192,8 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                geom2.vertices_rand=geom2.vertices_reduce;
        end
 
-
-        %% initial plots
-    %     geom2_fig=figure()
-    %     geom2_patch_orig=patch('Faces',geom2.faces,'Vertices',geom2.vertices,'FaceColor','r','FaceAlpha',.5)
-    %     hold on
-    %     geom2_patch_reduce=patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    %     
-    %     geom1_fig=figure()
-    %     geom1_patch_orig=patch('Faces',geom1.faces,'Vertices',geom1.vertices,'FaceColor','r','FaceAlpha',.5)
-    %     hold on
-    %     geom1_patch_reduce=patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    %     
-    %     both_geom_fig=figure()
-    %     geom2_patch_orig=patch('Faces',geom2.faces,'Vertices',geom2.vertices,'FaceColor','r','FaceAlpha',.5)
-    %     hold on
-    %     geom2_patch_reduce=patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    %     geom1_patch_orig=patch('Faces',geom1.faces,'Vertices',geom1.vertices,'FaceColor','r','FaceAlpha',.5)
-    %     hold on
-    %     geom1_patch_reduce=patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceColor','g','FaceAlpha',.5)
-    %     
-    
     %% Initial geometry smoothing
 
-    
-    
         %% determine initial overclosure distances
         if geom1_reduce_type_Q4==0
             % mesh geometry is tri
@@ -226,12 +222,8 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
 
 
         %% Determine Gaps
-
-%         geom1_surf_to_geom2_point_distance_dir=sign(geom1_surf_to_geom2_point_distance);
-%         geom1_surf_to_geom2_point_distance=geom1_surf_to_geom2_point_distance-desired_gap;
-
+        scale_val=1;
         geom1_surf_to_geom2_point_distance=geom1_surf_to_geom2_point_distance-desired_gap;
-%         geom1_surf_to_geom2_point_distance_dir=sign(geom1_surf_to_geom2_point_distance);
         geom1_surf_to_geom2_vector=geom1_surf_to_geom2_point_points;
         for count_vertex=1:length(geom1_surf_to_geom2_point_distance)
             if geom1_surf_to_geom2_point_distance(count_vertex)>0
@@ -248,8 +240,6 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             end
         end
 
-%         geom2_surf_to_geom1_point_distance_dir=sign(geom2_surf_to_geom1_point_distance);
-%         geom2_surf_to_geom1_point_distance=geom2_surf_to_geom1_point_distance-desired_gap;
         geom2_surf_to_geom1_point_distance=geom2_surf_to_geom1_point_distance-desired_gap;
         geom2_surf_to_geom1_vector=geom2_surf_to_geom1_point_points;
         for count_vertex=1:length(geom2_surf_to_geom1_point_distance)
@@ -288,15 +278,16 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         %% Create arrow deformation plot
         if plot_surf==1
             if counter==1
-                geom2_deform_reduce_fig=figure();
+                def_figure=figure();
             else
-                figure(geom2_deform_reduce_fig);
+                figure(def_figure);
+                clf(def_figure);
             end
+            subplot(1,2,1)
             plot3(geom2.vertices_rand(:,1),geom2.vertices_rand(:,2),...
-                geom2.vertices_rand(:,3),'ro')
+                geom2.vertices_rand(:,3),'r.')
             hold on
             if norm(geom1_surf_to_geom2_vector)>0
-        %         arrow3(geom2.vertices_rand,geom1_surf_to_geom2_vector+geom2.vertices_rand)
                 quiver3(geom2.vertices_rand(:,1),geom2.vertices_rand(:,2),geom2.vertices_rand(:,3),...
                     geom1_surf_to_geom2_vector(:,1).*geom1_surf_to_geom2_point_distance,...
                     geom1_surf_to_geom2_vector(:,2).*geom1_surf_to_geom2_point_distance,...
@@ -305,104 +296,74 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
             axis equal
 
-            if counter==1
-                geom1_deform_reduce_fig=figure();
-            else
-                figure(geom1_deform_reduce_fig);
-            end
+            subplot(1,2,2)
             plot3(geom1.vertices_rand(:,1),geom1.vertices_rand(:,2),...
-                geom1.vertices_rand(:,3),'ro')
+                geom1.vertices_rand(:,3),'r.')
             hold on
             if norm(geom2_surf_to_geom1_vector)>0
-        %         arrow3(geom1.vertices_rand,geom2_surf_to_geom1_vector+geom1.vertices_rand)
                 quiver3(geom1.vertices_rand(:,1),geom1.vertices_rand(:,2),geom1.vertices_rand(:,3),...
-                    -geom2_surf_to_geom1_vector(:,1).*geom2_surf_to_geom1_point_distance,...
-                    -geom2_surf_to_geom1_vector(:,2).*geom2_surf_to_geom1_point_distance,...
-                    -geom2_surf_to_geom1_vector(:,3).*geom2_surf_to_geom1_point_distance,'k');
+                    geom2_surf_to_geom1_vector(:,1).*geom2_surf_to_geom1_point_distance,...
+                    geom2_surf_to_geom1_vector(:,2).*geom2_surf_to_geom1_point_distance,...
+                    geom2_surf_to_geom1_vector(:,3).*geom2_surf_to_geom1_point_distance,'k');
             end
             patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
             axis equal
+            pause(.001);
         end
-        %% create Radial Basis Approximation
-
-%         rbf_timer=tic();
-
-
-
-%     geom_deform_vec_rbf=newrb(geom_master_positions',geom_master_deform_vector',...
-%             1E-6,smoothing,rbf_iterations);
-%     smoothing=smoothing*.9;
-%     geom_deform_vec_rbf=newgrnn(geom_master_positions',geom_master_deform_vector',smoothing);
-    
-    
-    %     geom_deform_vec_rbf=newrbe(geom_master_positions',geom_master_deform_vector',1000);
-
-
-
-
-        %% Plot original deformations
-    %     geom2_deform_orig_fig=figure();
-    %     for count_face=1:size(geom2.faces,1)
-    %         nodel=geom2.faces(count_face,:);
-    %         temp_vec=geom2_deform_orig_vec(nodel,:);
-    %         temp_vec_mag=zeros(3,1);
-    %         for count_vec=1:3
-    %             temp_vec_mag(count_vec)=norm(temp_vec(count_vec,:));
-    %         end
-    %         patch(geom2.vertices(nodel,1),geom2.vertices(nodel,2),...
-    %             geom2.vertices(nodel,3),temp_vec_mag);
-    %         hold on
-    %     end
-    %     colorbar
-    %     colormap jet
-    %     
-    %     
-    %     geom1_deform_orig_fig=figure();
-    %     for count_face=1:size(geom1.faces,1)
-    %         nodel=geom1.faces(count_face,:);
-    %         temp_vec=geom1_deform_orig_vec(nodel,:);
-    %         temp_vec_mag=zeros(3,1);
-    %         for count_vec=1:3
-    %             temp_vec_mag(count_vec)=norm(temp_vec(count_vec,:));
-    %         end
-    %         patch(geom1.vertices(nodel,1),geom1.vertices(nodel,2),...
-    %             geom1.vertices(nodel,3),temp_vec_mag);
-    %         hold on
-    %     end
-    %     colorbar
-    %     colormap jet
 
 
         %% Apply deformations
-    %     deforgeom22_fig=figure()
-    %     plot3(geom2.vertices(:,1),geom2.vertices(:,2),...
-    %         geom2.vertices(:,3),'ro');
-    %     hold on
         geom2.vertices=geom2.vertices+geom1_surf_to_geom2_vector;
-    %     plot3(geom2.vertices(:,1),geom2.vertices(:,2),...
-    %         geom2.vertices(:,3),'bo');
-    %     if norm(geom1_surf_to_geom2_vector)>0
-    %         arrow3(geom2.vertices_reduce,geom1_surf_to_geom2_vector+geom2.vertices_reduce)
-    %     end
-    % 
-    %     deforgeom21_fig=figure()
-    %     plot3(geom1.vertices(:,1),geom1.vertices(:,2),...
-    %         geom1.vertices(:,3),'ro');
-    %     hold on
         geom1.vertices=geom1.vertices+geom2_surf_to_geom1_vector;
-    %     plot3(geom1.vertices(:,1),geom1.vertices(:,2),...
-    %         geom1.vertices(:,3),'bo');
-    %     if norm(geom2_surf_to_geom1_vector)>0
-    %         arrow3(geom1.vertices_reduce,geom2_surf_to_geom1_vector+geom1.vertices_reduce+.0001)
-    %     end
-        %% Display Original Min Gap
+% % %         %% Display Original Min Gap
+% % %         geom2_error=min(geom1_surf_to_geom2_point_distance);
+% % %         geom1_error=min(geom2_surf_to_geom1_point_distance);
+% % %         geom1_error_total=[geom1_error_total,geom1_error];
+% % %         geom2_error_total=[geom2_error_total,geom2_error];
+% % %         
+% % %         
+% % %         if counter>20
+% % %             if geom1_error_total(end)~=0
+% % %                 conv_1=abs((geom1_error_total(end)-geom1_error_total(end-1))/geom1_error_total(end));
+% % %             else
+% % %                 conv_1=0;
+% % %             end
+% % %             if geom2_error_total(end)~=0
+% % %                 conv_2=abs((geom2_error_total(end)-geom2_error_total(end-1))/geom2_error_total(end));
+% % %             else
+% % %                 conv_2=0;
+% % %             end
+% % %             
+% % %             
+% % %            max_conv=max([conv_1,conv_2]);
+% % %            if max_conv<=conv_tol
+% % %                end_flag=1;
+% % %            else
+% % %                end_flag=0;
+% % %            end
+% % %         end
+% % %         table(geom2_error,geom1_error)
+% % %         total_error=min([geom2_error,geom1_error])
+
+%% Display Original Min Gap
         geom2_error=min(geom1_surf_to_geom2_point_distance);
         geom1_error=min(geom2_surf_to_geom1_point_distance);
+        geom1_error_mean=mean(geom2_surf_to_geom1_point_distance);
+        geom2_error_mean=mean(geom1_surf_to_geom2_point_distance);
         geom1_error_total=[geom1_error_total,geom1_error];
         geom2_error_total=[geom2_error_total,geom2_error];
-        
-        
-        if counter>20
+        geom_error_mean=log10(abs(min([geom1_error_mean,geom2_error_mean])));
+
+        max_deform=log10(norm([geom1_surf_to_geom2_vector;geom2_surf_to_geom1_vector]));
+        max_adjustment_vec=vecnorm([geom1_surf_to_geom2_vector;geom2_surf_to_geom1_vector],2,2);
+        current_num_overclosures = log10(length(nonzeros(max_adjustment_vec(max_adjustment_vec>0)))/length(max_adjustment_vec));
+        current_over=length(nonzeros(max_adjustment_vec(max_adjustment_vec>0)));
+        over_total=[over_total,current_over];
+
+        history_params.geom1_error_total=geom1_error_total;
+        history_params.geom2_error_total=geom2_error_total;
+        history_params.over_total=over_total;
+        if counter>150
             if geom1_error_total(end)~=0
                 conv_1=abs((geom1_error_total(end)-geom1_error_total(end-1))/geom1_error_total(end));
             else
@@ -413,36 +374,75 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             else
                 conv_2=0;
             end
-            
-            
-           max_conv=max([conv_1,conv_2]);
-           if max_conv<=conv_tol
-               end_flag=1;
-           else
-               end_flag=0;
-           end
+
+
+            max_conv=max([conv_1,conv_2]);
+            if max_conv<=conv_tol
+                end_flag=1;
+            else
+                end_flag=0;
+            end
         end
-        table(geom2_error,geom1_error)
+        table(geom2_error,geom1_error,geom1_error_mean,geom2_error_mean,current_over)
         total_error=min([geom2_error,geom1_error])
+        if total_error>=-.001
+            end_flag=1;
+        end
+
+
+        if counter==1
+            conv_figure=figure();
+        else
+            figure(conv_figure);
+            clf(conv_figure);
+        end
+        subplot(2,2,1);
+        total_error_hist(counter)=log10(abs(total_error));
+        plot(total_error_hist);
+        xlabel('Iteration');
+        ylabel('Log MAX Overclosure');
+        title('Maximum Overclosure');
+
+        subplot(2,2,2);
+        mean_conv_hist(counter)=geom_error_mean;
+        plot(mean_conv_hist);
+        xlabel('Iteration');
+        ylabel('Log Mean Overclosure');
+        title('Mean Overclosure');
+
+        subplot(2,2,3);
+        max_deform_hist(counter)=max_deform;
+        plot(max_deform_hist);
+        xlabel('Iteration');
+        ylabel('Log Max Adjustment');
+        title('Max Adjustment');
+
+        subplot(2,2,4);
+        num_over(counter)=current_num_overclosures;
+        plot(num_over);
+        xlabel('Iteration');
+        ylabel('log Fraction of Overclosures');
+        title('Fraction of Overclosures');
+
+
+
         scale_val=scale_val*.99;
-        %% Save new stls
         counter=counter+1;
-%         try
-%             if mod(counter,10)==0 && smoothing_improve==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0 && relative_gap_weight~=1
-%                 geom1.vertices=improveTriMeshQuality(geom1.faces,geom1.vertices,2,1,.001);
-%             end
-%         catch
-%             disp('geom1 mesh improvement failed');
-%         end
-% 
-% 
-%         try
-%             if mod(counter,10)==0 && smoothing_improve==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0 && relative_gap_weight~=0
-%                 geom2.vertices=improveTriMeshQuality(geom2.faces,geom2.vertices,2,1,.001);
-%             end
-%         catch
-%             disp('geom1 mesh improvement failed');
-%         end
+
+    if check_original==1
+            [full_mesh_params]=calculateFullOverclosure(geom1,geom2,use_parallel_loops,element_3d_type,desired_gap);
+            full_geom1_num_over=[full_geom1_num_over,full_mesh_params.geom1_num_over];
+            full_geom2_num_over=[full_geom2_num_over,full_mesh_params.geom2_num_over];
+            full_geom1_max_over=[full_geom1_max_over,full_mesh_params.geom1_max_over];
+            full_geom2_max_over=[full_geom2_max_over,full_mesh_params.geom2_max_over];
+            history_params.full_geom1_num_over=full_geom1_num_over;
+            history_params.full_geom2_num_over=full_geom2_num_over;
+            history_params.full_geom1_max_over=full_geom1_max_over;
+            history_params.full_geom2_max_over=full_geom2_max_over;
+        end
+        history_params.overall_time=overall_time;
+
+
     end
 
 
