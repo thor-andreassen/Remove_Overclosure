@@ -1,4 +1,5 @@
 function [full_mesh_params]=calculateFullOverclosure(geom1,geom2,use_parallel_loops,element_3d_type,desired_gap)
+    counter=0;    
     %% Reduced Mesh
     rand_ratio=1;
     if element_3d_type(1)

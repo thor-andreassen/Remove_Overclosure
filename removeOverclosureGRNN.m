@@ -132,6 +132,14 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                     % larger, as it will undo the scaling amount, it will
                     % simply increase the effect of the overclosures in the
                     % smoothing operation.
+                % params.accelerated_weight(x >=0) - Default = 1
+                    % This parameter controls the heavy ball momentum term.
+                    % A value of 0 will remove the momentum term, while a
+                    % value of 1 will add on 1 x the change in the previous
+                    % two positions of the nodes, to the current
+                    % adjustment. This term helps speed up the algorithm,
+                    % by avoiding small terms or error, in a similar manner
+                    % to the "integral" term in a PID controller.
 
     %% Define Gap Threshold
 
@@ -150,7 +158,8 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     params=setDefaultParamValue(params,'scale_reduction_factor',1.005);
     params=setDefaultParamValue(params,'weight_factor',10.0);
     params=setDefaultParamValue(params,'check_original',1);
-
+    params=setDefaultParamValue(params,'accelerated_weight',1);
+    
     % gap to achieve in final meshes in unit of mesh
     desired_gap=params.desired_gap;
     relative_gap_weight=params.relative_gap_weight;
@@ -432,7 +441,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             geom1_deform_orig_vec_old=zeros(size(geom1_deform_orig_vec));
             accelerated_weight=1;
         end
-%         accelerated_weight=accelerated_weight;
+
         geom2_deform_orig_vec_accel=(geom2_deform_orig_vec_old)*accelerated_weight;
         geom1_deform_orig_vec_accel=(geom1_deform_orig_vec_old)*accelerated_weight;
 
