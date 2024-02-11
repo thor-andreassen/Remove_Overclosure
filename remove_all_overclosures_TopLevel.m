@@ -1,5 +1,5 @@
 % Created by Thor E. Andreassen, PhD
-% Last Edited 1/22/2024
+% Last Edited 2/8/2024
 % This code shows an example of removing many overclosures from a large
 % number of interconnected geometries. In this case, the gluteus medius,
 % gluteus maximus, and gluteus minimus muscles. An arbitrary number of stls
@@ -14,7 +14,7 @@ clc
 %% get list of stls
 
 %% original test path
-stl_folder='C:\Users\DU_P620\Desktop\Thors_Personal_Folder\Test 2d overclsoure set\';
+stl_folder=[pwd,'\Test 2d overclsoure set\'];
 result_folder=[stl_folder,'fixed_stls\'];
 stl_files=dir([stl_folder,'*.stl']);
 stl_file_names={stl_files.name};

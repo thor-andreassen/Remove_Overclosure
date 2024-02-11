@@ -10,7 +10,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     % (quad or hexahedral)
     % input to the function is two variables called geom1 and geom 2.
     %These are structures that have the folloiwng variables:
-            % geom.faces: A connectivity list representing the set
+            % geom.elems: A connectivity list representing the set
                     % of elements. Each row represents a different element,
                     % with the row number corresponding to the assumed row.
                     % The elements can be of the following types and
@@ -210,26 +210,26 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         rand_ratio=.75;
         if element_3d_type(1)
             % element is 3D
-            [face_outer_surf,~,~,~,~,geom1_inner_nodes]=get3DElementOuterSurface(geom1.faces,geom1.vertices);
-            [geom1.faces_reduce,geom1.vertices_reduce]=renumberFacesAndVertices(face_outer_surf,geom1.vertices);
+            [face_outer_surf,~,~,~,~,geom1_inner_nodes]=get3DElementOuterSurface(geom1.elems,geom1.vertices);
+            [geom1.elems_reduce,geom1.vertices_reduce]=renumberFacesAndVertices(face_outer_surf,geom1.vertices);
             temp_rand=randperm(size(geom1_inner_nodes,1));
             temp_rand_val=temp_rand(1:ceil(size(geom1_inner_nodes,1)*rand_ratio));
             %                 geom1.vertices_rand=[geom1.vertices_reduce;geom1.vertices(temp_rand_val,:)];
             geom1.vertices_rand=[geom1.vertices_reduce;geom1_inner_nodes(temp_rand_val,:)];
-            if size(geom1.faces_reduce,2)==4
+            if size(geom1.elems_reduce,2)==4
                 geom1_reduce_type_Q4=1;
             else
                 geom1_reduce_type_Q4=0;
             end
         else
             % element is 2D
-            if size(geom1.faces,2)==3
+            if size(geom1.elems,2)==3
 
                 geom1_reduce_type_Q4=0;
                 if counter==1
                     try
                         if smooth_2D_surface==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0 && relative_gap_weight~=1
-                            geom1.vertices=improveTriMeshQuality(geom1.faces,geom1.vertices,2,2,.001);
+                            geom1.vertices=improveTriMeshQuality(geom1.elems,geom1.vertices,2,2,.001);
                         end
                     catch
                         disp('geom1 mesh improvement failed');
@@ -237,11 +237,11 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                 end
                 geom1_mesh_reduction_factor=scaleInputReductionFactor(geom1_mesh_reduction_factor,scale_reduction_factor);
                 if  geom1_mesh_reduction_factor<1
-                    temp=reducepatch(geom1.faces,geom1.vertices,geom1_mesh_reduction_factor);
-                    geom1.faces_reduce=temp.faces;
+                    temp=reducepatch(geom1.elems,geom1.vertices,geom1_mesh_reduction_factor);
+                    geom1.elems_reduce=temp.faces;
                     geom1.vertices_reduce=temp.vertices;
                 else
-                    geom1.faces_reduce=geom1.faces;
+                    geom1.elems_reduce=geom1.elems;
                     geom1.vertices_reduce=geom1.vertices;
                 end
             else
@@ -253,25 +253,25 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
 
         if element_3d_type(2)
             % element is 3D
-            [face_outer_surf,~,~,~,~,geom2_inner_nodes]=get3DElementOuterSurface(geom2.faces,geom2.vertices);
-            [geom2.faces_reduce,geom2.vertices_reduce]=renumberFacesAndVertices(face_outer_surf,geom2.vertices);
+            [face_outer_surf,~,~,~,~,geom2_inner_nodes]=get3DElementOuterSurface(geom2.elems,geom2.vertices);
+            [geom2.elems_reduce,geom2.vertices_reduce]=renumberFacesAndVertices(face_outer_surf,geom2.vertices);
             temp_rand=randperm(size(geom2_inner_nodes,1));
             temp_rand_val=temp_rand(1:ceil(size(geom2_inner_nodes,1)*rand_ratio));
             %                 geom2.vertices_rand=[geom2.vertices_reduce;geom2.vertices(temp_rand_val,:)];
             geom2.vertices_rand=[geom2.vertices_reduce;geom2_inner_nodes(temp_rand_val,:)];
-            if size(geom2.faces_reduce,2)==4
+            if size(geom2.elems_reduce,2)==4
                 geom2_reduce_type_Q4=1;
             else
                 geom2_reduce_type_Q4=0;
             end
         else
             % element is 2D
-            if size(geom2.faces,2)==3
+            if size(geom2.elems,2)==3
                 geom2_reduce_type_Q4=0;
                 if counter==1
                     try
                         if smooth_2D_surface==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0 && relative_gap_weight~=0
-                            geom2.vertices=improveTriMeshQuality(geom2.faces,geom2.vertices,2,2,.001);
+                            geom2.vertices=improveTriMeshQuality(geom2.elems,geom2.vertices,2,2,.001);
                         end
                     catch
                         disp('geom2 mesh improvement failed');
@@ -279,11 +279,11 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                 end
                 geom2_mesh_reduction_factor=scaleInputReductionFactor(geom2_mesh_reduction_factor,scale_reduction_factor);
                 if geom2_mesh_reduction_factor<1
-                    temp=reducepatch(geom2.faces,geom2.vertices,geom2_mesh_reduction_factor);
-                    geom2.faces_reduce=temp.faces;
+                    temp=reducepatch(geom2.elems,geom2.vertices,geom2_mesh_reduction_factor);
+                    geom2.elems_reduce=temp.faces;
                     geom2.vertices_reduce=temp.vertices;
                 else
-                    geom2.faces_reduce=geom2.faces;
+                    geom2.elems_reduce=geom2.elems;
                     geom2.vertices_reduce=geom2.vertices;
                 end
             else
@@ -298,13 +298,13 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         if geom1_reduce_type_Q4==0
             % mesh geometry is tri
             tri_timer=tic();
-            [geom1_surf_to_geom2_point_distance, geom1_surf_to_geom2_point_points] = point2trimesh('Faces',geom1.faces_reduce,...
+            [geom1_surf_to_geom2_point_distance, geom1_surf_to_geom2_point_points] = point2trimesh('Faces',geom1.elems_reduce,...
                 'Vertices',geom1.vertices_reduce,'QueryPoints',geom2.vertices_rand,'Algorithm','parallel');
             %             toc(tri_timer)
         elseif geom1_reduce_type_Q4==1
             % mesh geometry is quad
             [geom1_surf_to_geom2_point_points,geom1_surf_to_geom2_point_distance]=...
-                getPointToQ4MeshApproximate(geom1.faces_reduce,geom1.vertices_reduce,geom2.vertices_rand,use_parallel_loops);
+                getPointToQ4MeshApproximate(geom1.elems_reduce,geom1.vertices_reduce,geom2.vertices_rand,use_parallel_loops);
 
         end
 
@@ -314,14 +314,14 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         if geom2_reduce_type_Q4==0
             % mesh geometry is tri
             tri_timer=tic();
-            [geom2_surf_to_geom1_point_distance, geom2_surf_to_geom1_point_points] = point2trimesh('Faces',geom2.faces_reduce,...
+            [geom2_surf_to_geom1_point_distance, geom2_surf_to_geom1_point_points] = point2trimesh('Faces',geom2.elems_reduce,...
                 'Vertices',geom2.vertices_reduce,'QueryPoints',geom1.vertices_rand,'Algorithm','parallel');
 
             %             toc(tri_timer)
         elseif geom2_reduce_type_Q4==1
             % mesh geometry is quad
             [geom2_surf_to_geom1_point_points,geom2_surf_to_geom1_point_distance]=...
-                getPointToQ4MeshApproximate(geom2.faces_reduce,geom2.vertices_reduce,geom1.vertices_rand,use_parallel_loops);
+                getPointToQ4MeshApproximate(geom2.elems_reduce,geom2.vertices_reduce,geom1.vertices_rand,use_parallel_loops);
         end
 
         %% Determine Gaps
@@ -364,7 +364,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
             original_max_overclosure_1=min(geom2_surf_to_geom1_point_distance);
             original_max_overclosure_2=min(geom1_surf_to_geom2_point_distance);
             original_max_overclosure=min([original_max_overclosure_1,original_max_overclosure_2]);
-            if original_max_overclosure<-10
+            if original_max_overclosure<-30
                 error('gap exceeds 10 mm calculation of over-clsoure');
                 disp('the over-closure measure is too large for the current model')
             end
@@ -394,7 +394,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                     geom1_surf_to_geom2_vector(:,2).*geom1_surf_to_geom2_point_distance,...
                     geom1_surf_to_geom2_vector(:,3).*geom1_surf_to_geom2_point_distance,'k');
             end
-            patch('Faces',geom1.faces_reduce,'Vertices',geom1.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
+            patch('Faces',geom1.elems_reduce,'Vertices',geom1.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
             axis equal
 
             subplot(1,2,2)
@@ -407,7 +407,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
                     geom2_surf_to_geom1_vector(:,2).*geom2_surf_to_geom1_point_distance,...
                     geom2_surf_to_geom1_vector(:,3).*geom2_surf_to_geom1_point_distance,'k');
             end
-            patch('Faces',geom2.faces_reduce,'Vertices',geom2.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
+            patch('Faces',geom2.elems_reduce,'Vertices',geom2.vertices_reduce,'FaceAlpha',.3,'EdgeAlpha',.3,'FaceColor','b');
             axis equal
             pause(.001);
         end
@@ -435,7 +435,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         end
 
 
-        %% Add accelerate gradient
+        %% Add accelerated gradient (Polyak's Momentum or Heavy-Ball Momentum)
         if counter==1
             geom2_deform_orig_vec_old=zeros(size(geom2_deform_orig_vec));
             geom1_deform_orig_vec_old=zeros(size(geom1_deform_orig_vec));
@@ -542,7 +542,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         counter=counter+1;
         %         try
         %             if mod(counter,10)==0 && smoothing_improve==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0 && relative_gap_weight~=1
-        %                 geom1.vertices=improveTriMeshQuality(geom1.faces,geom1.vertices,2,1,.001);
+        %                 geom1.vertices=improveTriMeshQuality(geom1.elems,geom1.vertices,2,1,.001);
         %             end
         %         catch
         %             disp('geom1 mesh improvement failed');
@@ -551,7 +551,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
         %
         %         try
         %             if mod(counter,10)==0 && smoothing_improve==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0 && relative_gap_weight~=0
-        %                 geom2.vertices=improveTriMeshQuality(geom2.faces,geom2.vertices,2,1,.001);
+        %                 geom2.vertices=improveTriMeshQuality(geom2.elems,geom2.vertices,2,1,.001);
         %             end
         %         catch
         %             disp('geom1 mesh improvement failed');
@@ -574,7 +574,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
 
     %     try
     %         if smoothing_improve==1 && geom1_reduce_type_Q4==0 && element_3d_type(1)==0 && relative_gap_weight~=1
-    %             geom1.vertices=improveTriMeshQuality(geom1.faces,geom1.vertices,2,2,.001);
+    %             geom1.vertices=improveTriMeshQuality(geom1.elems,geom1.vertices,2,2,.001);
     %         end
     %     catch
     %         disp('geom1 mesh improvement failed');
@@ -583,7 +583,7 @@ function [geom1_new,geom2_new,counter,original_max_overclosure_1,original_max_ov
     %
     %     try
     %         if smoothing_improve==1 && geom2_reduce_type_Q4==0 && element_3d_type(2)==0 && relative_gap_weight~=0
-    %             geom2.vertices=improveTriMeshQuality(geom2.faces,geom2.vertices,2,2,.001);
+    %             geom2.vertices=improveTriMeshQuality(geom2.elems,geom2.vertices,2,2,.001);
     %         end
     %     catch
     %         disp('geom1 mesh improvement failed');
