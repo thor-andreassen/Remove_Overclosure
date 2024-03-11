@@ -1,7 +1,7 @@
 function params=setDefaultParamValue(params,name,value)
-    if ~isfield(params, name)
+    if isfield(params, name)
         NaN;
     else
-        params.name=value;
+        params.(name)=value;
     end
 end
